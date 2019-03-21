@@ -19,6 +19,6 @@ if __name__ == "__main__":
     game_screen = pygame.display.set_mode(SCREEN_RESOLUTION)
     game_clock = pygame.time.Clock()
 
-    game.Game(game_screen, game_clock).main_loop()
+    game.Game(game_screen, game_clock, TILE_SIZE).main_loop()
 
     pygame.quit()
