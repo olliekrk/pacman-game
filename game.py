@@ -9,7 +9,7 @@ class Game(object):
     TICKS_PER_SEC = 1000
 
     def __init__(self, game_screen, game_clock, tile_size):
-        self.board = board.Board(tile_size)
+        self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.game_screen = game_screen
         self.game_clock = game_clock
         self.finished = False
@@ -28,8 +28,7 @@ class Game(object):
                 self.finished = True
 
     def draw_board(self):
-        self.board.draw_onto_screen(self.game_screen)
-        pass
+        self.board.draw_onto_screen()
 
     def draw_sprites(self, dt):
         # drawing every alive character
