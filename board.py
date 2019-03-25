@@ -22,6 +22,15 @@ class Board(object):
 
         return Board.TILES.subsurface(column * Board.TILE_X, row * Board.TILE_X, Board.TILE_X, Board.TILE_X)
 
+    @staticmethod
+    def are_adjacent_tiles(tile1, tile2):
+        if tile1[0] == tile2[0] and (tile1[1] + 1 == tile2[1] or tile1[1] - 1 == tile2[1]):
+            return True
+        elif tile1[1] == tile2[1] and (tile1[0] + 1 == tile2[0] or tile1[0] - 1 == tile2[0]):
+            return True
+        else:
+            return False
+
     def get_tile_scaled(self, tile_number):
         return pygame.transform.scale(Board.get_tile(tile_number), (self.tile_size, self.tile_size))
 
@@ -34,13 +43,13 @@ class Board(object):
 
     def draw_onto_screen(self):
         self.game_screen.blit(self.background, (0, 0))
-        pygame.display.flip()
 
 
 class BoardLayout(pygame.sprite.Sprite):  # not sure if Sprite is needed here
-    def __init__(self, wall_coords, ghost_house_coords, spawn_coords, tunnels_coords, size, *groups):
+    def __init__(self, wall_coords, accessible_coords, ghost_house_coords, spawn_coords, tunnels_coords, size, *groups):
         super().__init__(*groups)
         self.walls = wall_coords
+        self.accessible = accessible_coords
         self.ghost_house = ghost_house_coords
         self.spawn = spawn_coords
         self.tunnels = tunnels_coords
@@ -88,4 +97,9 @@ class ClassicLayout(BoardLayout):
                          for j in range(ClassicLayout.SIZE[1])
                          if ClassicLayout.BOARD_MAP[j][i] == 'X']
 
-        super().__init__(walls_indices, None, None, None, ClassicLayout.SIZE)
+        accessible_indices = [(i, j)
+                              for i in range(ClassicLayout.SIZE[0])
+                              for j in range(ClassicLayout.SIZE[1])
+                              if (i, j) not in walls_indices]
+
+        super().__init__(walls_indices, accessible_indices, None, (1, 1), None, ClassicLayout.SIZE)
