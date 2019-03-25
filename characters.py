@@ -28,27 +28,37 @@ class Character(pygame.sprite.DirtySprite):
         self.moving = False
         super().__init__(*groups)
 
+    def is_in_center(self):
+        tile = self.position_tile
+        center = (tile[0] + 0.5) * self.board.tile_size, (tile[1] + 0.5) * self.board.tile_size
+        margin = 0.8
+        return abs(center[0] - self.position[0]) < margin and abs(center[1] - self.position[1]) < margin
+
     def turn_left(self):
         next_tile = self.position_tile[0] - 1, self.position_tile[1]
-        if next_tile in self.board.board_layout.accessible:
+        next_tile_accessible = next_tile in self.board.board_layout.accessible
+        if next_tile_accessible and self.is_in_center():
             self.moving = True
             self.direction = Directions.LEFT
 
     def turn_right(self):
         next_tile = self.position_tile[0] + 1, self.position_tile[1]
-        if next_tile in self.board.board_layout.accessible:
+        next_tile_accessible = next_tile in self.board.board_layout.accessible
+        if next_tile_accessible and self.is_in_center():
             self.moving = True
             self.direction = Directions.RIGHT
 
     def turn_up(self):
         next_tile = self.position_tile[0], self.position_tile[1] - 1
-        if next_tile in self.board.board_layout.accessible:
+        next_tile_accessible = next_tile in self.board.board_layout.accessible
+        if next_tile_accessible and self.is_in_center():
             self.moving = True
             self.direction = Directions.UP
 
     def turn_down(self):
         next_tile = self.position_tile[0], self.position_tile[1] + 1
-        if next_tile in self.board.board_layout.accessible:
+        next_tile_accessible = next_tile in self.board.board_layout.accessible
+        if next_tile_accessible and self.is_in_center():
             self.moving = True
             self.direction = Directions.DOWN
 
