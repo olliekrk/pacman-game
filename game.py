@@ -10,11 +10,13 @@ class Game(object):
     TICKS_PER_SEC = 1000
 
     def __init__(self, game_screen, game_clock, tile_size):
+        self.ghosts_group = pygame.sprite.LayeredDirty()
+        self.alive_group = pygame.sprite.LayeredDirty()
         self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.game_screen = game_screen
         self.game_clock = game_clock
         self.finished = False
-        self.player = characters.Pacman(self.board)
+        self.player = characters.Pacman(self.board, self.alive_group)
 
     def main_loop(self):
         while not self.finished:

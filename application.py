@@ -7,7 +7,7 @@ TITLE = "Pacman WIEiT Edition"
 ICON_TITLE = "Pacman SE"
 
 BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
-TILE_SIZE = 25  # pixels
+TILE_SIZE = 30  # pixels
 SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
 
 if __name__ == "__main__":

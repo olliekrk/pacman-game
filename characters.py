@@ -15,7 +15,7 @@ RED = (255, 0, 0)
 
 
 class Character(pygame.sprite.DirtySprite):
-    WALK_SPEED = 80
+    WALK_SPEED = 100
 
     def __init__(self, board, *groups):
         self.board = board
@@ -31,7 +31,7 @@ class Character(pygame.sprite.DirtySprite):
     def is_in_center(self):
         tile = self.position_tile
         center = (tile[0] + 0.5) * self.board.tile_size, (tile[1] + 0.5) * self.board.tile_size
-        margin = 0.8
+        margin = 1
         return abs(center[0] - self.position[0]) < margin and abs(center[1] - self.position[1]) < margin
 
     def turn_left(self):
@@ -116,4 +116,4 @@ class Pacman(Character):
                                      self.board.tile_size,
                                      self.board.tile_size), 1)
         pygame.draw.circle(game_screen, YELLOW,
-                           (round(self.position[0]), round(self.position[1])), 10)
+                           (round(self.position[0]), round(self.position[1])), self.board.tile_size//2)

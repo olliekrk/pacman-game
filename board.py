@@ -22,6 +22,9 @@ class Board(object):
 
         return Board.TILES.subsurface(column * Board.TILE_X, row * Board.TILE_X, Board.TILE_X, Board.TILE_X)
 
+    def get_tile_scaled(self, tile_number):
+        return pygame.transform.scale(Board.get_tile(tile_number), (self.tile_size, self.tile_size))
+
     @staticmethod
     def are_adjacent_tiles(tile1, tile2):
         if tile1[0] == tile2[0] and (tile1[1] + 1 == tile2[1] or tile1[1] - 1 == tile2[1]):
@@ -31,21 +34,22 @@ class Board(object):
         else:
             return False
 
-    def get_tile_scaled(self, tile_number):
-        return pygame.transform.scale(Board.get_tile(tile_number), (self.tile_size, self.tile_size))
-
     def prepare_background(self):
+        wall_tile = 7
+
         background = pygame.Surface(self.game_screen.get_size())
+
         for (i, j) in self.board_layout.walls:
-            background.blit(self.get_tile_scaled(6),
-                            (i * self.tile_size, j * self.tile_size))
+            tile = self.get_tile_scaled(wall_tile)
+            background.blit(tile, (i * self.tile_size, j * self.tile_size))
+
         return background
 
     def draw_onto_screen(self):
         self.game_screen.blit(self.background, (0, 0))
 
 
-class BoardLayout(pygame.sprite.Sprite):  # not sure if Sprite is needed here
+class BoardLayout(object):  # not sure if Sprite is needed here
     def __init__(self, wall_coords, accessible_coords, ghost_house_coords, spawn_coords, tunnels_coords, size, *groups):
         super().__init__(*groups)
         self.walls = wall_coords
@@ -90,7 +94,7 @@ class ClassicLayout(BoardLayout):
                  "X                          X",
                  "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"]
 
-    def __init__(self, *groups):
+    def __init__(self):
         # each index correspond to one tile on playable area
         walls_indices = [(i, j)
                          for i in range(ClassicLayout.SIZE[0])
@@ -102,4 +106,6 @@ class ClassicLayout(BoardLayout):
                               for j in range(ClassicLayout.SIZE[1])
                               if (i, j) not in walls_indices]
 
-        super().__init__(walls_indices, accessible_indices, None, (1, 1), None, ClassicLayout.SIZE)
+        spawn_tile = (13, 23)
+
+        super().__init__(walls_indices, accessible_indices, None, spawn_tile, None, ClassicLayout.SIZE)
