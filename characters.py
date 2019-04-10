@@ -1,6 +1,8 @@
 import pygame
 from board import Board
 from enum import Enum
+from math import floor
+import game
 
 
 class Directions(Enum):
@@ -10,12 +12,13 @@ class Directions(Enum):
     DOWN = 4
 
 
+values = [(0, 0), (1, 0), (-1, 0), (0, -1), (0, 1)]
 YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
 
 
 class Character(pygame.sprite.DirtySprite):
-    WALK_SPEED = 100
+    WALK_SPEED = 80
 
     def __init__(self, board, *groups):
         self.board = board
@@ -31,7 +34,7 @@ class Character(pygame.sprite.DirtySprite):
     def is_in_center(self):
         tile = self.position_tile
         center = (tile[0] + 0.5) * self.board.tile_size, (tile[1] + 0.5) * self.board.tile_size
-        margin = 1
+        margin = 0.8
         return abs(center[0] - self.position[0]) < margin and abs(center[1] - self.position[1]) < margin
 
     def turn_left(self):
@@ -116,4 +119,38 @@ class Pacman(Character):
                                      self.board.tile_size,
                                      self.board.tile_size), 1)
         pygame.draw.circle(game_screen, YELLOW,
-                           (round(self.position[0]), round(self.position[1])), self.board.tile_size//2)
+                           (round(self.position[0]), round(self.position[1])), 10)
+
+
+class Ghost(Character):
+    TILES_CHANGE_SPEED = 37
+
+    def __init__(self, board, color, *groups):
+        super().__init__(board, *groups)
+        self.width = 24
+        self.is_moving = False
+        self.current_texture = 0
+        self.position_tile = board.board_layout.ghost_house.get(color)
+        self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
+                         (self.position_tile[1] + 0.5) * self.board.tile_size)
+
+        texture_name = './sheets/DinoSprites - ' + color.name + '.png'
+        self.texture = pygame.image.load(texture_name)
+        self.idle_textures = [self.get_tile_scaled(i) for i in range(0, 4)]
+        self.run_textures = [self.get_tile_scaled(i) for i in range(4, 14)]
+
+    def get_tile(self, tile_number):
+        tile_number %= self.width;
+
+        num_of_element = tile_number * self.width
+
+        return self.texture.subsurface(num_of_element, 0, self.width, self.width)
+
+    def get_tile_scaled(self, tile_number):
+        return pygame.transform.scale(self.get_tile(tile_number), (self.board.tile_size * 2, self.board.tile_size * 2))
+
+    def draw(self, game_screen):
+        index = int((floor(pygame.time.get_ticks() * Ghost.TILES_CHANGE_SPEED) % 4))
+
+        game_screen.blit(self.idle_textures[index],
+                         (self.position[0] - self.board.tile_size, self.position[1] - self.board.tile_size))
