@@ -2,6 +2,14 @@ import pygame
 
 import board
 import characters
+from enum import Enum
+
+
+class GhostNames(Enum):
+    inky = 1
+    pinky = 2
+    blinky = 3
+    clyde = 4
 
 
 class Game(object):
@@ -17,12 +25,18 @@ class Game(object):
         self.game_clock = game_clock
         self.finished = False
         self.player = characters.Pacman(self.board, self.alive_group)
+        self.monsters = {GhostNames.inky: characters.Ghost(self.board, GhostNames.inky, self.alive_group, self.ghosts_group),
+                         GhostNames.pinky: characters.Ghost(self.board, GhostNames.pinky, self.alive_group, self.ghosts_group),
+                         GhostNames.blinky: characters.Ghost(self.board, GhostNames.blinky, self.alive_group, self.ghosts_group),
+                         GhostNames.clyde: characters.Ghost(self.board, GhostNames.clyde, self.alive_group, self.ghosts_group)
+                         }
 
     def main_loop(self):
         while not self.finished:
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
             self.update_pacman_position(dt)
+            # self.update_ghosts_position(dt)
             self.draw_board()
             self.draw_sprites()
             pygame.display.flip()  # todo change flip to DirtySprites update
@@ -39,6 +53,8 @@ class Game(object):
     def draw_sprites(self):
         # drawing every alive character
         self.player.draw(self.game_screen)
+        for ghost in self.monsters.values():
+            ghost.draw(self.game_screen)
 
     def update_pacman_position(self, dt):
         keys_pressed = pygame.key.get_pressed()
