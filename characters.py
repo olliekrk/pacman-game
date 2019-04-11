@@ -123,13 +123,14 @@ class Pacman(Character):
 
 
 class Ghost(Character):
-    TILES_CHANGE_SPEED = 37
+    TILES_CHANGE_SPEED = 0.015
 
     def __init__(self, board, color, *groups):
         super().__init__(board, *groups)
         self.width = 24
-        self.is_moving = False
         self.current_texture = 0
+        self.direction = Directions.UP
+        self.moving = True
         self.position_tile = board.board_layout.ghost_house.get(color)
         self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
                          (self.position_tile[1] + 0.5) * self.board.tile_size)
@@ -137,20 +138,18 @@ class Ghost(Character):
         texture_name = './sheets/DinoSprites - ' + color.name + '.png'
         self.texture = pygame.image.load(texture_name)
         self.idle_textures = [self.get_tile_scaled(i) for i in range(0, 4)]
-        self.run_textures = [self.get_tile_scaled(i) for i in range(4, 14)]
+        self.run_textures = [self.get_tile_scaled(i) for i in range(5, 11)]
 
     def get_tile(self, tile_number):
         tile_number %= self.width;
-
         num_of_element = tile_number * self.width
-
         return self.texture.subsurface(num_of_element, 0, self.width, self.width)
 
     def get_tile_scaled(self, tile_number):
         return pygame.transform.scale(self.get_tile(tile_number), (self.board.tile_size * 2, self.board.tile_size * 2))
 
     def draw(self, game_screen):
-        index = int((floor(pygame.time.get_ticks() * Ghost.TILES_CHANGE_SPEED) % 4))
+        index = int((floor(pygame.time.get_ticks() * Ghost.TILES_CHANGE_SPEED) % 6))
 
-        game_screen.blit(self.idle_textures[index],
+        game_screen.blit(self.run_textures[index],
                          (self.position[0] - self.board.tile_size, self.position[1] - self.board.tile_size))

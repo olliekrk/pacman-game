@@ -104,10 +104,10 @@ class ClassicLayout(BoardLayout):
                               if (i, j) not in walls_indices]
 
         ghost_house_map = {
-            game.GhostNames.inky: (11, 13),
-            game.GhostNames.pinky: (12, 13),
-            game.GhostNames.blinky: (15, 13),
-            game.GhostNames.clyde: (16, 13)
+            game.GhostNames.inky: (13, 14),
+            game.GhostNames.pinky: (14, 14),
+            game.GhostNames.blinky: (13, 15),
+            game.GhostNames.clyde: (14, 15)
         }
 
         super().__init__(walls_indices, accessible_indices, ghost_house_map, (1, 1), None, ClassicLayout.SIZE)

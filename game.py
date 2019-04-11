@@ -3,6 +3,7 @@ import pygame
 import board
 import characters
 from enum import Enum
+import random
 
 
 class GhostNames(Enum):
@@ -36,7 +37,7 @@ class Game(object):
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
             self.update_pacman_position(dt)
-            # self.update_ghosts_position(dt)
+            self.update_ghosts_position(dt)
             self.draw_board()
             self.draw_sprites()
             pygame.display.flip()  # todo change flip to DirtySprites update
@@ -68,3 +69,19 @@ class Game(object):
             self.player.turn_down()
 
         self.player.move(dt)
+
+    def update_ghosts_position(self, dt):
+        for key, value in self.monsters.items():
+            if not value.moving:
+                new_direction = random.randint(0, 3)
+                if new_direction == 0:
+                    value.turn_left()
+                if new_direction == 1:
+                    value.turn_right()
+                if new_direction == 2:
+                    value.turn_up()
+                if new_direction == 3:
+                    value.turn_down()
+
+            value.move(dt)
+
