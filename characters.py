@@ -1,8 +1,7 @@
-import pygame
-from board import Board
 from enum import Enum
+
+import pygame
 from math import floor
-import game
 
 
 class Directions(Enum):
@@ -12,17 +11,21 @@ class Directions(Enum):
     DOWN = 4
 
 
-values = [(0, 0), (1, 0), (-1, 0), (0, -1), (0, 1)]
 YELLOW = (255, 255, 0)
 RED = (255, 0, 0)
 
 
 class Character(pygame.sprite.DirtySprite):
-    WALK_SPEED = 80
+    WALK_SPEED = 120
+    DIRECTION_SWITCHER = {
+        Directions.LEFT: (-1, 0),
+        Directions.RIGHT: (1, 0),
+        Directions.UP: (0, -1),
+        Directions.DOWN: (0, 1)
+    }
 
     def __init__(self, board, *groups):
         self.board = board
-
         # position_tile is a tile on which currently is the center of character
         self.position_tile = board.board_layout.spawn
         self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
@@ -31,80 +34,48 @@ class Character(pygame.sprite.DirtySprite):
         self.moving = False
         super().__init__(*groups)
 
-    def is_in_center(self):
-        tile = self.position_tile
-        center = (tile[0] + 0.5) * self.board.tile_size, (tile[1] + 0.5) * self.board.tile_size
-        margin = 0.8
-        return abs(center[0] - self.position[0]) < margin and abs(center[1] - self.position[1]) < margin
+    def safe_to_change_direction(self):
+        margin = self.board.tile_size / 20
+        center_x = (self.position_tile[0] + 0.5) * self.board.tile_size
+        center_y = (self.position_tile[1] + 0.5) * self.board.tile_size
+        return abs(center_x - self.position[0]) < margin and abs(center_y - self.position[1]) < margin
 
-    def turn_left(self):
-        next_tile = self.position_tile[0] - 1, self.position_tile[1]
-        next_tile_accessible = next_tile in self.board.board_layout.accessible
-        if next_tile_accessible and self.is_in_center():
-            self.moving = True
-            self.direction = Directions.LEFT
+    def safe_to_reach_center(self):
+        center_x = (self.position_tile[0] + 0.5) * self.board.tile_size
+        center_y = (self.position_tile[1] + 0.5) * self.board.tile_size
+        if self.direction == Directions.LEFT:
+            return self.position[0] > center_x
+        if self.direction == Directions.RIGHT:
+            return self.position[0] < center_x
+        if self.direction == Directions.UP:
+            return self.position[1] > center_y
+        if self.direction == Directions.DOWN:
+            return self.position[1] < center_y
 
-    def turn_right(self):
-        next_tile = self.position_tile[0] + 1, self.position_tile[1]
+    def change_direction(self, new_direction):
+        tile_switch = Character.DIRECTION_SWITCHER.get(new_direction)
+        next_tile = self.position_tile[0] + tile_switch[0], self.position_tile[1] + tile_switch[1]
         next_tile_accessible = next_tile in self.board.board_layout.accessible
-        if next_tile_accessible and self.is_in_center():
+        if next_tile_accessible and self.safe_to_change_direction():
             self.moving = True
-            self.direction = Directions.RIGHT
-
-    def turn_up(self):
-        next_tile = self.position_tile[0], self.position_tile[1] - 1
-        next_tile_accessible = next_tile in self.board.board_layout.accessible
-        if next_tile_accessible and self.is_in_center():
-            self.moving = True
-            self.direction = Directions.UP
-
-    def turn_down(self):
-        next_tile = self.position_tile[0], self.position_tile[1] + 1
-        next_tile_accessible = next_tile in self.board.board_layout.accessible
-        if next_tile_accessible and self.is_in_center():
-            self.moving = True
-            self.direction = Directions.DOWN
+            self.direction = new_direction
 
     def move(self, dt):
-        # todo make this code more consistent
-        if self.moving:
-            if self.direction == Directions.LEFT:
-                next_tile = self.position_tile[0] - 1, self.position_tile[1]
-                next_accessible = next_tile in self.board.board_layout.accessible
-                center_safe = self.position[0] > (self.position_tile[0] + 0.5) * self.board.tile_size
-                if next_accessible or center_safe:
-                    self.position = self.position[0] - Character.WALK_SPEED * dt, self.position[1]
-                else:
-                    self.moving = False
+        if not self.moving:
+            return
 
-            elif self.direction == Directions.RIGHT:
-                next_tile = self.position_tile[0] + 1, self.position_tile[1]
-                next_accessible = next_tile in self.board.board_layout.accessible
-                center_safe = self.position[0] < (self.position_tile[0] + 0.5) * self.board.tile_size
-                if next_accessible or center_safe:
-                    self.position = self.position[0] + Character.WALK_SPEED * dt, self.position[1]
-                else:
-                    self.moving = False
+        tile_switch = Character.DIRECTION_SWITCHER.get(self.direction)
+        next_tile = self.position_tile[0] + tile_switch[0], self.position_tile[1] + tile_switch[1]
+        next_tile_accessible = next_tile in self.board.board_layout.accessible
 
-            elif self.direction == Directions.UP:
-                next_tile = self.position_tile[0], self.position_tile[1] - 1
-                next_accessible = next_tile in self.board.board_layout.accessible
-                center_safe = self.position[1] > (self.position_tile[1] + 0.5) * self.board.tile_size
-                if next_accessible or center_safe:
-                    self.position = self.position[0], self.position[1] - Character.WALK_SPEED * dt
-                else:
-                    self.moving = False
+        if next_tile_accessible or self.safe_to_reach_center():
+            self.position = \
+                self.position[0] + (tile_switch[0] * Character.WALK_SPEED * dt), \
+                self.position[1] + (tile_switch[1] * Character.WALK_SPEED * dt)
+        else:
+            self.moving = False
 
-            elif self.direction == Directions.DOWN:
-                next_tile = self.position_tile[0], self.position_tile[1] + 1
-                next_accessible = next_tile in self.board.board_layout.accessible
-                center_safe = self.position[1] < (self.position_tile[1] + 0.5) * self.board.tile_size
-                if next_accessible or center_safe:
-                    self.position = self.position[0], self.position[1] + Character.WALK_SPEED * dt
-                else:
-                    self.moving = False
-
-            self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
+        self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
 
 
 class Pacman(Character):
@@ -140,7 +111,7 @@ class Ghost(Character):
         self.run_textures = [self.get_tile_scaled(i) for i in range(4, 14)]
 
     def get_tile(self, tile_number):
-        tile_number %= self.width;
+        tile_number %= self.width
 
         num_of_element = tile_number * self.width
 

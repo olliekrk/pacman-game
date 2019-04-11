@@ -1,7 +1,7 @@
 import pygame
-
 import board
 import characters
+from characters import Directions
 from enum import Enum
 
 
@@ -25,11 +25,12 @@ class Game(object):
         self.game_clock = game_clock
         self.finished = False
         self.player = characters.Pacman(self.board, self.alive_group)
-        self.monsters = {GhostNames.inky: characters.Ghost(self.board, GhostNames.inky, self.alive_group, self.ghosts_group),
-                         GhostNames.pinky: characters.Ghost(self.board, GhostNames.pinky, self.alive_group, self.ghosts_group),
-                         GhostNames.blinky: characters.Ghost(self.board, GhostNames.blinky, self.alive_group, self.ghosts_group),
-                         GhostNames.clyde: characters.Ghost(self.board, GhostNames.clyde, self.alive_group, self.ghosts_group)
-                         }
+        self.monsters = {
+            GhostNames.inky: characters.Ghost(self.board, GhostNames.inky, self.alive_group, self.ghosts_group),
+            GhostNames.pinky: characters.Ghost(self.board, GhostNames.pinky, self.alive_group, self.ghosts_group),
+            GhostNames.blinky: characters.Ghost(self.board, GhostNames.blinky, self.alive_group, self.ghosts_group),
+            GhostNames.clyde: characters.Ghost(self.board, GhostNames.clyde, self.alive_group, self.ghosts_group)
+        }
 
     def main_loop(self):
         while not self.finished:
@@ -59,12 +60,12 @@ class Game(object):
     def update_pacman_position(self, dt):
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_RIGHT]:
-            self.player.turn_right()
+            self.player.change_direction(Directions.RIGHT)
         elif keys_pressed[pygame.K_LEFT]:
-            self.player.turn_left()
+            self.player.change_direction(Directions.LEFT)
         elif keys_pressed[pygame.K_UP]:
-            self.player.turn_up()
+            self.player.change_direction(Directions.UP)
         elif keys_pressed[pygame.K_DOWN]:
-            self.player.turn_down()
+            self.player.change_direction(Directions.DOWN)
 
         self.player.move(dt)
