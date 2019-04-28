@@ -1,7 +1,7 @@
 import abc
-import pygame
-from math import floor
 from enum import Enum
+
+import pygame
 
 
 class Directions(Enum):
@@ -10,14 +10,20 @@ class Directions(Enum):
     UP = 3
     DOWN = 4
 
-
-YELLOW = (255, 255, 0)
-RED = (255, 0, 0)
+    @staticmethod
+    def opposite_direction(direction):
+        if direction == Directions.LEFT:
+            return Directions.RIGHT
+        elif direction == Directions.RIGHT:
+            return Directions.LEFT
+        elif direction == Directions.UP:
+            return Directions.DOWN
+        elif direction == Directions.DOWN:
+            return Directions.UP
 
 
 class Character(pygame.sprite.DirtySprite):
-    WALK_SPEED = 100
-    TILES_CHANGE_SPEED = 0.015
+    TILES_CHANGE_SPEED = 0.010
     DIRECTION_SWITCH_MAP = {
         Directions.LEFT: (-1, 0),
         Directions.RIGHT: (1, 0),
@@ -37,8 +43,9 @@ class Character(pygame.sprite.DirtySprite):
         self.position_tile = board.board_layout.spawn
         self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
                          (self.position_tile[1] + 0.5) * self.board.tile_size)
-        self.direction = Directions.LEFT
+        self.direction = Directions.UP
         self.is_running = True
+        self.speed = 130
 
         # dirty sprite features
         self.dirty = 1
@@ -81,23 +88,22 @@ class Character(pygame.sprite.DirtySprite):
 
         if next_tile_accessible or self.safe_to_reach_center():
             self.position = \
-                self.position[0] + (tile_switch[0] * Character.WALK_SPEED * dt), \
-                self.position[1] + (tile_switch[1] * Character.WALK_SPEED * dt)
+                self.position[0] + (tile_switch[0] * self.speed * dt), \
+                self.position[1] + (tile_switch[1] * self.speed * dt)
         else:
             self.is_running = False
 
         self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
 
-    def update(self, *args):
+    def update(self, dt, *args):
         self.dirty = 1  # it is always dirty
         self.set_rect()
         self.set_image()
+        self.move(dt)
 
+    @abc.abstractmethod
     def set_rect(self):
-        self.rect = pygame.Rect(self.position[0] - self.character_width / 2,
-                                self.position[1] - self.character_height / 2,
-                                self.character_width,
-                                self.character_height)
+        """Sets up the area occupied by this character"""
 
     @abc.abstractmethod
     def set_image(self):
@@ -108,69 +114,14 @@ class Pacman(Character):
     def __init__(self, board, *groups):
         super().__init__(board, *groups)
         self.image = pygame.Surface((board.tile_size, board.tile_size))
-        self.image.fill(YELLOW)
+        self.image.fill((0, 255, 0))
+
+    def set_rect(self):
+        self.rect = pygame.Rect(self.position[0] - self.character_width / 2,
+                                self.position[1] - self.character_height / 2,
+                                self.character_width,
+                                self.character_height)
 
     # TODO: add Pacman textures
     def set_image(self):
         pass
-
-    def draw(self, game_screen):
-        pygame.draw.rect(game_screen, RED,
-                         pygame.Rect(self.position_tile[0] * self.board.tile_size,
-                                     self.position_tile[1] * self.board.tile_size,
-                                     self.board.tile_size,
-                                     self.board.tile_size), 1)
-        pygame.draw.circle(game_screen, YELLOW,
-                           (round(self.position[0]), round(self.position[1])), 10)
-
-
-class Ghost(Character):
-    TEXTURE_SIZE = 24
-    RUN_LENGTH = 7
-    IDLE_LENGTH = 4
-
-    def __init__(self, board, color, *groups):
-        super().__init__(board, *groups)
-
-        # general attributes
-        self.color = color
-        self.character_width = board.tile_size * 2
-        self.character_height = board.tile_size * 2
-
-        # movement-related features
-        self.position_tile = board.board_layout.ghost_house.get(color)
-        self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
-                         (self.position_tile[1] + 0.5) * self.board.tile_size)
-
-        # rendering related features
-        texture_name = './sheets/DinoSprites - ' + color.name + '.png'
-        self.texture = pygame.image.load(texture_name)
-        self.idle_textures = [self.load_tile_scaled(i) for i in range(0, 4)]
-        self.run_textures = [self.load_tile_scaled(i) for i in range(4, 11)]
-
-    def load_tile(self, number_of_tile):
-        number_of_tile %= Ghost.TEXTURE_SIZE
-        tile_location_px = number_of_tile * Ghost.TEXTURE_SIZE
-        return self.texture.subsurface(tile_location_px, 0, Ghost.TEXTURE_SIZE, Ghost.TEXTURE_SIZE)
-
-    def load_tile_scaled(self, tile_number):
-        return pygame.transform.scale(self.load_tile(tile_number), (self.character_width, self.character_height))
-
-    def set_image(self):
-        if self.is_running:
-            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % Ghost.RUN_LENGTH)
-            self.image = self.run_textures[image_index]
-        else:
-            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % Ghost.IDLE_LENGTH)
-            self.image = self.idle_textures[image_index]
-
-    # blue ghost "Inky" needs both pacman and Blinky position
-    # TODO: set new target tile
-    def update(self, dt, pacman_position, blinky_position, *args):
-        super().update()
-
-    def draw(self, game_screen):
-        index = int((floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % 7))
-
-        game_screen.blit(self.run_textures[index],
-                         (self.position[0] - self.board.tile_size, self.position[1] - self.board.tile_size))
