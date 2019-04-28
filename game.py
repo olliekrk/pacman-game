@@ -19,10 +19,10 @@ class Game(object):
 
         self.player = characters.Pacman(self.board, self.alive_group)
         self.monsters = {
-            GhostNames.inky: Ghost(self.board, GhostNames.inky, self.alive_group, self.ghosts_group),
-            GhostNames.pinky: Ghost(self.board, GhostNames.pinky, self.alive_group, self.ghosts_group),
+            GhostNames.inky: Inky(self.board, self.alive_group, self.ghosts_group),
+            GhostNames.pinky: Pinky(self.board, self.alive_group, self.ghosts_group),
             GhostNames.blinky: Blinky(self.board, self.alive_group, self.ghosts_group),
-            GhostNames.clyde: Ghost(self.board, GhostNames.clyde, self.alive_group, self.ghosts_group)
+            GhostNames.clyde: Clyde(self.board, self.alive_group, self.ghosts_group)
         }
 
     def main_loop(self):
@@ -44,7 +44,7 @@ class Game(object):
 
     # updating and drawing every alive character
     def update_sprites(self, dt):
-        self.alive_group.update(dt, self.player.position_tile, self.monsters.get(GhostNames.blinky).position_tile)
+        self.alive_group.update(dt, self.player, self.monsters.get(GhostNames.blinky))
         dirty_rectangles = self.alive_group.draw(self.game_screen)
         pygame.display.update(dirty_rectangles)
 

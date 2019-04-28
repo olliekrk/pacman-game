@@ -1,3 +1,5 @@
+import abc
+
 import pygame
 
 import game
@@ -8,7 +10,10 @@ class Board(object):
     TILE_X = 64  # the size of tile loaded from .png, in px
     TILES_IN_ROW = 6
     NO_TILES = 23
-    BACKGROUND_TILE_INDEX = 6
+
+    # indices of tiles used for drawing background
+    BACKGROUND_TILE = 0
+    GHOST_HOUSE_TILE = 4
 
     def __init__(self, tile_size, game_screen, layout):
         self.tile_size = tile_size
@@ -40,7 +45,13 @@ class Board(object):
     def prepare_background(self):
         background = pygame.Surface(self.game_screen.get_size())
         for (i, j) in self.board_layout.walls:
-            background.blit(self.get_tile_scaled(Board.BACKGROUND_TILE_INDEX), (i * self.tile_size, j * self.tile_size))
+            background.blit(self.get_tile_scaled(Board.BACKGROUND_TILE), (i * self.tile_size, j * self.tile_size))
+
+        for (i, j) in self.board_layout.ghost_house:
+            ghost_house_tile = self.get_tile_scaled(Board.GHOST_HOUSE_TILE)
+            ghost_house_tile.set_alpha(10)
+            background.blit(ghost_house_tile, (i * self.tile_size, j * self.tile_size))
+
         return background
 
     def draw_onto_screen(self):
@@ -48,13 +59,19 @@ class Board(object):
 
 
 class BoardLayout:
-    def __init__(self, wall_coords, accessible_coords, ghost_house_coords, spawn_coords, tunnels_coords, size, *groups):
-        self.walls = wall_coords
-        self.accessible = accessible_coords
-        self.ghost_house = ghost_house_coords
-        self.spawn = spawn_coords
-        self.tunnels = tunnels_coords
+    def __init__(self, wall_indices, accessible_indices,
+                 ghost_spawn_map, ghost_house_indices, ghost_path_indices,
+                 spawn_index, tunnel_indices, size):
         self.layout_size = size
+        self.walls = wall_indices
+        self.accessible = accessible_indices
+
+        self.ghost_spawns = ghost_spawn_map
+        self.ghost_house = ghost_house_indices
+        self.ghost_path = ghost_path_indices
+
+        self.spawn = spawn_index
+        self.tunnels = tunnel_indices
 
 
 class ClassicLayout(BoardLayout):
@@ -71,10 +88,10 @@ class ClassicLayout(BoardLayout):
                  "XXXXXX XXXXX XX XXXXX XXXXXX",
                  "     X XXXXX XX XXXXX X     ",
                  "     X XX          XX X     ",
-                 "     X XX XXX  XXX XX X     ",
-                 "XXXXXX XX X      X XX XXXXXX",
-                 "          X      X          ",
-                 "XXXXXX XX X      X XX XXXXXX",
+                 "     X XX XXXGGXXX XX X     ",
+                 "XXXXXX XX XggGGggX XX XXXXXX",
+                 "          XggGGggX          ",
+                 "XXXXXX XX XggGGggX XX XXXXXX",
                  "     X XX XXXXXXXX XX X     ",
                  "     X XX          XX X     ",
                  "     X XX XXXXXXXX XX X     ",
@@ -91,7 +108,7 @@ class ClassicLayout(BoardLayout):
                  "X                          X",
                  "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"]
 
-    def __init__(self, *groups):
+    def __init__(self):
         # each index correspond to one tile on playable area
         walls_indices = [(i, j)
                          for i in range(ClassicLayout.SIZE[0])
@@ -101,13 +118,27 @@ class ClassicLayout(BoardLayout):
         accessible_indices = [(i, j)
                               for i in range(ClassicLayout.SIZE[0])
                               for j in range(ClassicLayout.SIZE[1])
-                              if (i, j) not in walls_indices]
+                              if ClassicLayout.BOARD_MAP[j][i] == ' ']
 
-        ghost_house_map = {
+        ghost_house_indices = [(i, j)
+                               for i in range(ClassicLayout.SIZE[0])
+                               for j in range(ClassicLayout.SIZE[1])
+                               if ClassicLayout.BOARD_MAP[j][i] in ['g', 'G']]
+
+        ghost_path_indices = [(i, j)
+                              for i in range(ClassicLayout.SIZE[0])
+                              for j in range(ClassicLayout.SIZE[1])
+                              if ClassicLayout.BOARD_MAP[j][i] == 'G']
+
+        ghost_spawn_map = {
             game.GhostNames.inky: (13, 14),
             game.GhostNames.pinky: (14, 14),
             game.GhostNames.blinky: (13, 15),
             game.GhostNames.clyde: (14, 15)
         }
 
-        super().__init__(walls_indices, accessible_indices, ghost_house_map, (1, 1), None, ClassicLayout.SIZE)
+        spawn_index = (14, 23)
+
+        super().__init__(walls_indices, accessible_indices,
+                         ghost_spawn_map, ghost_house_indices, ghost_path_indices,
+                         spawn_index, None, ClassicLayout.SIZE)

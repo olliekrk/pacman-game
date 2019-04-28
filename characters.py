@@ -53,7 +53,7 @@ class Character(pygame.sprite.DirtySprite):
         self.image = None
 
     def safe_to_change_direction(self):
-        margin = self.board.tile_size / 20
+        margin = self.board.tile_size / 15
         center_x = (self.position_tile[0] + 0.5) * self.board.tile_size
         center_y = (self.position_tile[1] + 0.5) * self.board.tile_size
         return abs(center_x - self.position[0]) < margin and abs(center_y - self.position[1]) < margin
@@ -70,11 +70,16 @@ class Character(pygame.sprite.DirtySprite):
         if self.direction == Directions.DOWN:
             return self.position[1] < center_y
 
+    def tile_accessible(self, next_tile):
+        a = next_tile in self.board.board_layout.accessible
+        b = self.position_tile in self.board.board_layout.ghost_path \
+            and next_tile in self.board.board_layout.ghost_path
+        return a or b
+
     def change_direction(self, new_direction):
         tile_switch = Character.DIRECTION_SWITCH_MAP.get(new_direction)
         next_tile = self.position_tile[0] + tile_switch[0], self.position_tile[1] + tile_switch[1]
-        next_tile_accessible = next_tile in self.board.board_layout.accessible
-        if next_tile_accessible and self.safe_to_change_direction():
+        if self.tile_accessible(next_tile) and self.safe_to_change_direction():
             self.is_running = True
             self.direction = new_direction
 
@@ -84,9 +89,8 @@ class Character(pygame.sprite.DirtySprite):
 
         tile_switch = Character.DIRECTION_SWITCH_MAP.get(self.direction)
         next_tile = self.position_tile[0] + tile_switch[0], self.position_tile[1] + tile_switch[1]
-        next_tile_accessible = next_tile in self.board.board_layout.accessible
 
-        if next_tile_accessible or self.safe_to_reach_center():
+        if self.tile_accessible(next_tile) or self.safe_to_reach_center():
             self.position = \
                 self.position[0] + (tile_switch[0] * self.speed * dt), \
                 self.position[1] + (tile_switch[1] * self.speed * dt)
