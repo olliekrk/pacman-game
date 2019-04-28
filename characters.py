@@ -2,6 +2,7 @@ import abc
 from enum import Enum
 
 import pygame
+from math import floor
 
 
 class Directions(Enum):
@@ -36,8 +37,9 @@ class Character(pygame.sprite.DirtySprite):
 
         # general attributes
         self.board = board
-        self.character_width = board.tile_size
-        self.character_height = board.tile_size
+        self.character_width = board.tile_size * 2
+        self.character_height = board.tile_size * 2
+        self.speed = 130
 
         # movement-related features
         self.position_tile = board.board_layout.spawn
@@ -45,7 +47,14 @@ class Character(pygame.sprite.DirtySprite):
                          (self.position_tile[1] + 0.5) * self.board.tile_size)
         self.direction = Directions.UP
         self.is_running = True
-        self.speed = 130
+
+        # textures related attributes
+        self.texture = None
+        self.texture_size = None
+        self.run_length = None
+        self.idle_length = None
+        self.idle_textures = None
+        self.run_textures = None
 
         # dirty sprite features
         self.dirty = 1
@@ -106,26 +115,54 @@ class Character(pygame.sprite.DirtySprite):
         self.move(dt)
 
     @abc.abstractmethod
+    def load_tile(self, number_of_tile):
+        """Loads the tile from given texture source"""
+
+    def load_tile_scaled(self, tile_number):
+        """Loads the tile from given texture source, respecting character's width and height"""
+        return pygame.transform.scale(self.load_tile(tile_number), (self.character_width, self.character_height))
+
     def set_rect(self):
         """Sets up the area occupied by this character"""
-
-    @abc.abstractmethod
-    def set_image(self):
-        """Method that sets 'image' field using character's textures"""
-
-
-class Pacman(Character):
-    def __init__(self, board, *groups):
-        super().__init__(board, *groups)
-        self.image = pygame.Surface((board.tile_size, board.tile_size))
-        self.image.fill((0, 255, 0))
-
-    def set_rect(self):
         self.rect = pygame.Rect(self.position[0] - self.character_width / 2,
                                 self.position[1] - self.character_height / 2,
                                 self.character_width,
                                 self.character_height)
 
-    # TODO: add Pacman textures
     def set_image(self):
-        pass
+        """Method that sets 'image' field using character's textures"""
+        if self.is_running:
+            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % self.run_length)
+            self.image = self.run_textures[image_index]
+        else:
+            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % self.idle_length)
+            self.image = self.idle_textures[image_index]
+
+        if self.direction in [Directions.LEFT, Directions.UP]:
+            self.image = pygame.transform.flip(self.image, True, False)
+
+
+class Pacman(Character):
+    TEXTURES_ROW = TEXTURES_COLUMN = 10
+
+    def __init__(self, board, *groups):
+        super().__init__(board, *groups)
+
+        self.character_width = board.tile_size * 2
+        self.character_height = board.tile_size * 2
+
+        # textures related attributes
+        self.texture = pygame.image.load('./sheets/Dwarf Sprite Sheet.png')
+        self.texture_size = 32
+        self.run_length = 8
+        self.idle_length = 5
+        self.idle_textures = [self.load_tile_scaled(i) for i in range(0, 5)]
+        self.run_textures = [self.load_tile_scaled(i) for i in range(10, 18)]
+
+    def load_tile(self, number_of_tile):
+        row = floor(number_of_tile / Pacman.TEXTURES_ROW)
+        column = number_of_tile % Pacman.TEXTURES_COLUMN
+        crop_left_px = column * self.texture_size
+        crop_up_px = row * self.texture_size
+        return self.texture.subsurface(crop_left_px, crop_up_px,
+                                       self.texture_size, self.texture_size)

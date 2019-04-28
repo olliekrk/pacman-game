@@ -1,4 +1,4 @@
-from math import floor, sqrt
+from math import sqrt
 
 from characters import *
 
@@ -12,17 +12,12 @@ class GhostNames(Enum):
 
 class Ghost(Character):
     DIRECTION_CHANGE_TIME_GAP = 100
-    TEXTURE_SIZE = 24
-    RUN_LENGTH = 7
-    IDLE_LENGTH = 4
 
     def __init__(self, board, color, *groups):
         super().__init__(board, *groups)
 
         # general attributes
-        self.color = color
-        self.character_width = board.tile_size * 2
-        self.character_height = board.tile_size * 2
+        # ...
 
         # movement-related features
         self.position_tile = board.board_layout.ghost_spawns.get(color)
@@ -30,9 +25,12 @@ class Ghost(Character):
                          (self.position_tile[1] + 0.5) * self.board.tile_size)
         self.speed = 100
 
-        # rendering related attributes
+        # textures related attributes
         texture_name = './sheets/DinoSprites - ' + color.name + '.png'
         self.texture = pygame.image.load(texture_name)
+        self.texture_size = 24
+        self.run_length = 7
+        self.idle_length = 4
         self.idle_textures = [self.load_tile_scaled(i) for i in range(0, 4)]
         self.run_textures = [self.load_tile_scaled(i) for i in range(4, 11)]
 
@@ -50,29 +48,9 @@ class Ghost(Character):
         return sqrt(pow(from_tile[0] - to_tile[0], 2) + pow(from_tile[1] - to_tile[1], 2))
 
     def load_tile(self, number_of_tile):
-        number_of_tile %= Ghost.TEXTURE_SIZE
-        tile_location_px = number_of_tile * Ghost.TEXTURE_SIZE
-        return self.texture.subsurface(tile_location_px, 0, Ghost.TEXTURE_SIZE, Ghost.TEXTURE_SIZE)
-
-    def load_tile_scaled(self, tile_number):
-        return pygame.transform.scale(self.load_tile(tile_number), (self.character_width, self.character_height))
-
-    def set_rect(self):
-        self.rect = pygame.Rect(self.position[0] - self.character_width / 2,
-                                self.position[1] - self.character_height / 2,
-                                self.character_width,
-                                self.character_height)
-
-    def set_image(self):
-        if self.is_running:
-            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % Ghost.RUN_LENGTH)
-            self.image = self.run_textures[image_index]
-        else:
-            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % Ghost.IDLE_LENGTH)
-            self.image = self.idle_textures[image_index]
-
-        if self.direction in [Directions.LEFT, Directions.UP]:
-            self.image = pygame.transform.flip(self.image, True, False)
+        number_of_tile %= self.texture_size
+        tile_location_px = number_of_tile * self.texture_size
+        return self.texture.subsurface(tile_location_px, 0, self.texture_size, self.texture_size)
 
     def update(self, dt, *args):
         self.update_chase_tile(args[0], args[1])
@@ -80,6 +58,7 @@ class Ghost(Character):
 
     def reverse_direction(self):
         self.direction = Directions.opposite_direction(self.direction)
+        self.direction_change_time = pygame.time.get_ticks()
 
     def update_direction(self):
         time = pygame.time.get_ticks()
