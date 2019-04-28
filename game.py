@@ -1,5 +1,3 @@
-import random
-
 import board
 import characters
 from ghosts import *
@@ -60,17 +58,3 @@ class Game(object):
             self.player.change_direction(Directions.UP)
         elif keys_pressed[pygame.K_DOWN]:
             self.player.change_direction(Directions.DOWN)
-
-    # todo: implement ghosts movement algorithms
-    def update_ghosts_position(self, dt):
-        for key, value in self.monsters.items():
-            if not value.is_running:
-                new_direction = random.randint(0, 3)
-                if new_direction == 0:
-                    value.change_direction(Directions.LEFT)
-                if new_direction == 1:
-                    value.change_direction(Directions.RIGHT)
-                if new_direction == 2:
-                    value.change_direction(Directions.UP)
-                if new_direction == 3:
-                    value.change_direction(Directions.DOWN)
