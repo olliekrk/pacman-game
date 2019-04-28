@@ -4,7 +4,6 @@ from ghosts import *
 
 
 class Game(object):
-    MAX_LIFE = 3
     FPS_LIMIT = 90
     TICKS_PER_SEC = 1000.0
 
@@ -27,11 +26,13 @@ class Game(object):
 
     def main_loop(self):
         self.alive_group.clear(self.game_screen, self.board.background)
+        self.board.collectibles.clear(self.game_screen, self.board.background)
         while not self.finished:
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
             self.update_pacman_direction()
             self.update_sprites(dt)
+            self.update_collectibles()
 
     # maintaining events like mouse/button clicks etc
     def events_loop(self):
@@ -39,13 +40,17 @@ class Game(object):
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.finished = True
 
-    def draw_board(self):
-        self.board.draw_onto_screen()
-
     # updating and drawing every alive character
     def update_sprites(self, dt):
         self.alive_group.update(dt, self.player, self.monsters.get(GhostNames.blinky))
         dirty_rectangles = self.alive_group.draw(self.game_screen)
+        pygame.display.update(dirty_rectangles)
+
+    # TODO: this works bad, player texture is too big
+    def update_collectibles(self):
+        pygame.sprite.spritecollide(self.player, self.board.collectibles, True)
+        self.board.collectibles.update(self.alive_group)
+        dirty_rectangles = self.board.collectibles.draw(self.game_screen)
         pygame.display.update(dirty_rectangles)
 
     def update_pacman_direction(self):

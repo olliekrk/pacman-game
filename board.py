@@ -1,7 +1,6 @@
-import abc
-
 import pygame
 
+import collectibles
 import game
 
 
@@ -20,6 +19,7 @@ class Board(object):
         self.game_screen = game_screen
         self.board_layout = layout
         self.background = self.prepare_background()
+        self.collectibles = self.prepare_collectibles()
 
     @staticmethod
     def get_tile(tile_number):
@@ -54,8 +54,11 @@ class Board(object):
 
         return background
 
-    def draw_onto_screen(self):
-        self.game_screen.blit(self.background, (0, 0))
+    def prepare_collectibles(self):
+        collectible_group = pygame.sprite.LayeredDirty()
+        for (x, y) in self.board_layout.accessible:
+            collectibles.Collectible(x, y, self.tile_size, collectible_group)
+        return collectible_group
 
 
 class BoardLayout:
@@ -86,15 +89,15 @@ class ClassicLayout(BoardLayout):
                  "X XXXX XX XXXXXXXX XX XXXX X",
                  "X      XX    XX    XX      X",
                  "XXXXXX XXXXX XX XXXXX XXXXXX",
-                 "     X XXXXX XX XXXXX X     ",
-                 "     X XX          XX X     ",
-                 "     X XX XXXGGXXX XX X     ",
+                 "/////X XXXXX XX XXXXX X/////",
+                 "/////X XX          XX X/////",
+                 "/////X XX XXXGGXXX XX X/////",
                  "XXXXXX XX XggGGggX XX XXXXXX",
                  "          XggGGggX          ",
                  "XXXXXX XX XggGGggX XX XXXXXX",
-                 "     X XX XXXXXXXX XX X     ",
-                 "     X XX          XX X     ",
-                 "     X XX XXXXXXXX XX X     ",
+                 "/////X XX XXXXXXXX XX X/////",
+                 "/////X XX          XX X/////",
+                 "/////X XX XXXXXXXX XX X/////",
                  "XXXXXX XX XXXXXXXX XX XXXXXX",
                  "X            XX            X",
                  "X XXXX XXXXX XX XXXXX XXXX X",

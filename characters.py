@@ -148,9 +148,6 @@ class Pacman(Character):
     def __init__(self, board, *groups):
         super().__init__(board, *groups)
 
-        self.character_width = board.tile_size * 2
-        self.character_height = board.tile_size * 2
-
         # textures related attributes
         self.texture = pygame.image.load('./sheets/Dwarf Sprite Sheet.png')
         self.texture_size = 32
