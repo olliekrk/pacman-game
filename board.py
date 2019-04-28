@@ -7,6 +7,7 @@ class Board(object):
     TILE_X = 64  # the size of tile loaded from .png, in px
     TILES_IN_ROW = 6
     NO_TILES = 23
+    BACKGROUND_TILE_INDEX = 6
 
     def __init__(self, tile_size, game_screen, layout):
         self.tile_size = tile_size
@@ -38,17 +39,15 @@ class Board(object):
     def prepare_background(self):
         background = pygame.Surface(self.game_screen.get_size())
         for (i, j) in self.board_layout.walls:
-            background.blit(self.get_tile_scaled(6),
-                            (i * self.tile_size, j * self.tile_size))
+            background.blit(self.get_tile_scaled(Board.BACKGROUND_TILE_INDEX), (i * self.tile_size, j * self.tile_size))
         return background
 
     def draw_onto_screen(self):
         self.game_screen.blit(self.background, (0, 0))
 
 
-class BoardLayout(pygame.sprite.Sprite):  # not sure if Sprite is needed here
+class BoardLayout:
     def __init__(self, wall_coords, accessible_coords, ghost_house_coords, spawn_coords, tunnels_coords, size, *groups):
-        super().__init__(*groups)
         self.walls = wall_coords
         self.accessible = accessible_coords
         self.ghost_house = ghost_house_coords

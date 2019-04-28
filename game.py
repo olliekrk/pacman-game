@@ -1,9 +1,9 @@
 import pygame
 import board
 import characters
+import random
 from characters import Directions
 from enum import Enum
-import random
 
 
 class GhostNames(Enum):
@@ -16,15 +16,17 @@ class GhostNames(Enum):
 class Game(object):
     MAX_LIFE = 3
     FPS_LIMIT = 90
-    TICKS_PER_SEC = 1000
+    TICKS_PER_SEC = 1000.0
 
     def __init__(self, game_screen, game_clock, tile_size):
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
-        self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
+
+        self.finished = False
         self.game_screen = game_screen
         self.game_clock = game_clock
-        self.finished = False
+        self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
+
         self.player = characters.Pacman(self.board, self.alive_group)
         self.monsters = {
             GhostNames.inky: characters.Ghost(self.board, GhostNames.inky, self.alive_group, self.ghosts_group),
@@ -34,14 +36,13 @@ class Game(object):
         }
 
     def main_loop(self):
+        self.alive_group.clear(self.game_screen, self.board.background)
         while not self.finished:
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
+            self.draw_sprites(dt)
             self.update_pacman_position(dt)
             self.update_ghosts_position(dt)
-            self.draw_board()
-            self.draw_sprites()
-            pygame.display.flip()  # todo change flip to DirtySprites update
 
     def events_loop(self):
         # maintaining events like mouse/button clicks etc
@@ -52,11 +53,11 @@ class Game(object):
     def draw_board(self):
         self.board.draw_onto_screen()
 
-    def draw_sprites(self):
-        # drawing every alive character
-        self.player.draw(self.game_screen)
-        for ghost in self.monsters.values():
-            ghost.draw(self.game_screen)
+    # drawing every alive character
+    def draw_sprites(self, dt):
+        self.alive_group.update(dt, self.player.position, self.monsters.get(GhostNames.blinky).position)
+        dirty_rectangles = self.alive_group.draw(self.game_screen)
+        pygame.display.update(dirty_rectangles)
 
     def update_pacman_position(self, dt):
         keys_pressed = pygame.key.get_pressed()
@@ -71,9 +72,10 @@ class Game(object):
 
         self.player.move(dt)
 
+    # todo: implement ghosts movement algorithms
     def update_ghosts_position(self, dt):
         for key, value in self.monsters.items():
-            if not value.moving:
+            if not value.is_running:
                 new_direction = random.randint(0, 3)
                 if new_direction == 0:
                     value.change_direction(Directions.LEFT)
@@ -85,4 +87,3 @@ class Game(object):
                     value.change_direction(Directions.DOWN)
 
             value.move(dt)
-
