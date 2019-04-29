@@ -6,7 +6,7 @@ class Collectible(pygame.sprite.DirtySprite):
     def __init__(self, x_tile, y_tile, tile_size, *groups):
         super().__init__(*groups)
         self.tile = (x_tile, y_tile)
-        self.size = tile_size // 4
+        self.size = tile_size // 5
 
         self.image = pygame.Surface((self.size, self.size))
         self.image.fill((255, 255, 0))

@@ -48,7 +48,7 @@ class Game(object):
 
     # TODO: this works bad, player texture is too big
     def update_collectibles(self):
-        pygame.sprite.spritecollide(self.player, self.board.collectibles, True)
+        pygame.sprite.spritecollide(self.player, self.board.collectibles, dokill=True)
         self.board.collectibles.update(self.alive_group)
         dirty_rectangles = self.board.collectibles.draw(self.game_screen)
         pygame.display.update(dirty_rectangles)

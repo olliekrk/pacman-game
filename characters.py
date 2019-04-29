@@ -25,6 +25,7 @@ class Directions(Enum):
 
 class Character(pygame.sprite.DirtySprite):
     TILES_CHANGE_SPEED = 0.010
+    TELEPORT_TIME_GAP = 1000
     DIRECTION_SWITCH_MAP = {
         Directions.LEFT: (-1, 0),
         Directions.RIGHT: (1, 0),
@@ -37,8 +38,8 @@ class Character(pygame.sprite.DirtySprite):
 
         # general attributes
         self.board = board
-        self.character_width = board.tile_size * 2
-        self.character_height = board.tile_size * 2
+        self.character_width = board.tile_size
+        self.character_height = board.tile_size
         self.speed = 130
 
         # movement-related features
@@ -61,6 +62,9 @@ class Character(pygame.sprite.DirtySprite):
         self.rect = None
         self.image = None
 
+        # necessary to perform teleports
+        self.last_teleport_time = pygame.time.get_ticks()
+
     def safe_to_change_direction(self):
         margin = self.board.tile_size / 15
         center_x = (self.position_tile[0] + 0.5) * self.board.tile_size
@@ -80,10 +84,15 @@ class Character(pygame.sprite.DirtySprite):
             return self.position[1] < center_y
 
     def tile_accessible(self, next_tile):
-        a = next_tile in self.board.board_layout.accessible
-        b = self.position_tile in self.board.board_layout.ghost_path \
-            and next_tile in self.board.board_layout.ghost_path
-        return a or b
+        regular_tile = next_tile in self.board.board_layout.accessible
+
+        ghost_house_tile = self.position_tile in self.board.board_layout.ghost_path and next_tile in self.board.board_layout.ghost_path
+
+        tunnel_tile = False
+        for (start, end) in self.board.board_layout.tunnels:
+            tunnel_tile = next_tile == start or next_tile == end
+
+        return regular_tile or tunnel_tile or ghost_house_tile
 
     def change_direction(self, new_direction):
         tile_switch = Character.DIRECTION_SWITCH_MAP.get(new_direction)
@@ -93,6 +102,13 @@ class Character(pygame.sprite.DirtySprite):
             self.direction = new_direction
 
     def move(self, dt):
+
+        # using tunnels on boards
+        target_tile = self.board.teleport_available(self.position_tile)
+        if target_tile is not None:
+            self.teleport_character(target_tile)
+            self.is_running = True
+
         if not self.is_running:
             return
 
@@ -103,10 +119,17 @@ class Character(pygame.sprite.DirtySprite):
             self.position = \
                 self.position[0] + (tile_switch[0] * self.speed * dt), \
                 self.position[1] + (tile_switch[1] * self.speed * dt)
+            self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
+
         else:
             self.is_running = False
 
-        self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
+    def teleport_character(self, target_tile):
+            time = pygame.time.get_ticks()
+            if abs(time - self.last_teleport_time) > Character.TELEPORT_TIME_GAP:
+                self.last_teleport_time = time
+                self.position_tile = target_tile
+                self.position = (target_tile[0] + 0.5) * self.board.tile_size, (target_tile[1] + 0.5) * self.board.tile_size
 
     def update(self, dt, *args):
         self.dirty = 1  # it is always dirty

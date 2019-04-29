@@ -60,6 +60,12 @@ class Board(object):
             collectibles.Collectible(x, y, self.tile_size, collectible_group)
         return collectible_group
 
+    def teleport_available(self, position_tile):
+        for (start_tile, end_tile) in self.board_layout.tunnels:
+            if position_tile == start_tile:
+                return end_tile
+        return None
+
 
 class BoardLayout:
     def __init__(self, wall_indices, accessible_indices,
@@ -142,6 +148,9 @@ class ClassicLayout(BoardLayout):
 
         spawn_index = (14, 23)
 
+        tunnel_indices = [((-1, 14), (28, 14)),
+                          ((28, 14), (-1, 14))]
+
         super().__init__(walls_indices, accessible_indices,
                          ghost_spawn_map, ghost_house_indices, ghost_path_indices,
-                         spawn_index, None, ClassicLayout.SIZE)
+                         spawn_index, tunnel_indices, ClassicLayout.SIZE)
