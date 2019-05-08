@@ -43,26 +43,28 @@ class Character(pygame.sprite.DirtySprite):
         self.speed = 130
 
         # movement-related features
-        self.position_tile = board.board_layout.spawn
-        self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
-                         (self.position_tile[1] + 0.5) * self.board.tile_size)
+        self.position_tile = None
+        self.position = None
         self.direction = Directions.UP
-        self.is_running = True
+        self.is_running = False
+        self.is_killing = False
 
         # textures related attributes
         self.texture = None
         self.texture_size = None
-        self.run_length = None
-        self.idle_length = None
+        self.idle_length = 0
+        self.run_length = 0
+        self.kill_length = 0
         self.idle_textures = None
         self.run_textures = None
+        self.kill_textures = None
 
         # dirty sprite features
         self.dirty = 1
         self.rect = None
         self.image = None
 
-        # necessary to perform teleports
+        # game mechanics related features
         self.last_teleport_time = pygame.time.get_ticks()
 
     def safe_to_change_direction(self):
@@ -83,6 +85,10 @@ class Character(pygame.sprite.DirtySprite):
         if self.direction == Directions.DOWN:
             return self.position[1] < center_y
 
+    def set_position_to_tile_center(self):
+        self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
+                         (self.position_tile[1] + 0.5) * self.board.tile_size)
+
     def tile_accessible(self, next_tile):
         regular_tile = next_tile in self.board.board_layout.accessible
 
@@ -102,34 +108,29 @@ class Character(pygame.sprite.DirtySprite):
             self.direction = new_direction
 
     def move(self, dt):
-
         # using tunnels on boards
-        target_tile = self.board.teleport_available(self.position_tile)
-        if target_tile is not None:
-            self.teleport_character(target_tile)
+        teleport_to_tile = self.board.teleport_available(self.position_tile)
+        if teleport_to_tile is not None:
+            self.teleport_character(teleport_to_tile)
             self.is_running = True
-
-        if not self.is_running:
-            return
 
         tile_switch = Character.DIRECTION_SWITCH_MAP.get(self.direction)
         next_tile = self.position_tile[0] + tile_switch[0], self.position_tile[1] + tile_switch[1]
 
-        if self.tile_accessible(next_tile) or self.safe_to_reach_center():
+        self.is_running = self.tile_accessible(next_tile) or self.safe_to_reach_center()
+
+        if self.is_running:
             self.position = \
                 self.position[0] + (tile_switch[0] * self.speed * dt), \
                 self.position[1] + (tile_switch[1] * self.speed * dt)
             self.position_tile = self.position[0] // self.board.tile_size, self.position[1] // self.board.tile_size
 
-        else:
-            self.is_running = False
-
     def teleport_character(self, target_tile):
-            time = pygame.time.get_ticks()
-            if abs(time - self.last_teleport_time) > Character.TELEPORT_TIME_GAP:
-                self.last_teleport_time = time
-                self.position_tile = target_tile
-                self.position = (target_tile[0] + 0.5) * self.board.tile_size, (target_tile[1] + 0.5) * self.board.tile_size
+        time = pygame.time.get_ticks()
+        if abs(time - self.last_teleport_time) > Character.TELEPORT_TIME_GAP:
+            self.last_teleport_time = time
+            self.position_tile = target_tile
+            self.set_position_to_tile_center()
 
     def update(self, dt, *args):
         self.dirty = 1  # it is always dirty
@@ -138,12 +139,13 @@ class Character(pygame.sprite.DirtySprite):
         self.move(dt)
 
     @abc.abstractmethod
-    def load_tile(self, number_of_tile):
+    def load_tile(self, texture, number_of_tile):
         """Loads the tile from given texture source"""
 
-    def load_tile_scaled(self, tile_number):
+    def load_tile_scaled(self, texture, tile_number):
         """Loads the tile from given texture source, respecting character's width and height"""
-        return pygame.transform.scale(self.load_tile(tile_number), (self.character_width, self.character_height))
+        return pygame.transform.scale(self.load_tile(texture, tile_number),
+                                      (self.character_width, self.character_height))
 
     def set_rect(self):
         """Sets up the area occupied by this character"""
@@ -154,7 +156,10 @@ class Character(pygame.sprite.DirtySprite):
 
     def set_image(self):
         """Method that sets 'image' field using character's textures"""
-        if self.is_running:
+        if self.is_killing:
+            image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % self.kill_length)
+            self.image = self.kill_textures[image_index]
+        elif self.is_running:
             image_index = int(floor(pygame.time.get_ticks() * Character.TILES_CHANGE_SPEED) % self.run_length)
             self.image = self.run_textures[image_index]
         else:
@@ -171,18 +176,31 @@ class Pacman(Character):
     def __init__(self, board, *groups):
         super().__init__(board, *groups)
 
+        # movement-related features
+        self.position_tile = board.board_layout.spawn
+        self.set_position_to_tile_center()
+        self.direction = Directions.UP
+        self.is_running = True
+
         # textures related attributes
         self.texture = pygame.image.load('./sheets/Dwarf Sprite Sheet.png')
         self.texture_size = 32
-        self.run_length = 8
-        self.idle_length = 5
-        self.idle_textures = [self.load_tile_scaled(i) for i in range(0, 5)]
-        self.run_textures = [self.load_tile_scaled(i) for i in range(10, 18)]
 
-    def load_tile(self, number_of_tile):
+        self.idle_length = 5
+        self.run_length = 8
+        self.kill_length = 7
+        self.idle_textures = [self.load_tile_scaled(self.texture, i) for i in range(0, 5)]
+        self.run_textures = [self.load_tile_scaled(self.texture, i) for i in range(10, 18)]
+        self.kill_textures = [self.load_tile_scaled(self.texture, i) for i in range(20, 27)]
+        self.set_rect()
+
+        # game mechanisms related attributes
+        self.is_killing = False
+
+    def load_tile(self, texture, number_of_tile):
         row = floor(number_of_tile / Pacman.TEXTURES_ROW)
         column = number_of_tile % Pacman.TEXTURES_COLUMN
         crop_left_px = column * self.texture_size
         crop_up_px = row * self.texture_size
-        return self.texture.subsurface(crop_left_px, crop_up_px,
-                                       self.texture_size, self.texture_size)
+        return texture.subsurface(crop_left_px, crop_up_px,
+                                  self.texture_size, self.texture_size)

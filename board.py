@@ -19,7 +19,6 @@ class Board(object):
         self.game_screen = game_screen
         self.board_layout = layout
         self.background = self.prepare_background()
-        self.collectibles = self.prepare_collectibles()
 
     @staticmethod
     def get_tile(tile_number):
@@ -54,11 +53,17 @@ class Board(object):
 
         return background
 
-    def prepare_collectibles(self):
-        collectible_group = pygame.sprite.LayeredDirty()
+    def prepare_dots(self):
+        dots_group = pygame.sprite.LayeredDirty()
         for (x, y) in self.board_layout.accessible:
-            collectibles.Collectible(x, y, self.tile_size, collectible_group)
-        return collectible_group
+            collectibles.Dot(x, y, self.tile_size, dots_group)
+        return dots_group
+
+    def prepare_big_dots(self):
+        big_dots_group = pygame.sprite.LayeredDirty()
+        for (x, y) in self.board_layout.big_dots_indices:
+            collectibles.BigDot(x, y, self.tile_size, big_dots_group)
+        return big_dots_group
 
     def teleport_available(self, position_tile):
         for (start_tile, end_tile) in self.board_layout.tunnels:
@@ -70,10 +75,11 @@ class Board(object):
 class BoardLayout:
     def __init__(self, wall_indices, accessible_indices,
                  ghost_spawn_map, ghost_house_indices, ghost_path_indices,
-                 spawn_index, tunnel_indices, size):
+                 spawn_index, tunnel_indices, big_dots_indices, size):
         self.layout_size = size
         self.walls = wall_indices
         self.accessible = accessible_indices
+        self.big_dots_indices = big_dots_indices
 
         self.ghost_spawns = ghost_spawn_map
         self.ghost_house = ghost_house_indices
@@ -86,7 +92,7 @@ class BoardLayout:
 class ClassicLayout(BoardLayout):
     SIZE = (28, 31)  # only playable area size
     BOARD_MAP = ["XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-                 "X            XX            X",
+                 "XO           XX           OX",
                  "X XXXX XXXXX XX XXXXX XXXX X",
                  "X XXXX XXXXX XX XXXXX XXXX X",
                  "X XXXX XXXXX XX XXXXX XXXX X",
@@ -114,7 +120,7 @@ class ClassicLayout(BoardLayout):
                  "X      XX    XX    XX      X",
                  "X XXXXXXXXXX XX XXXXXXXXXX X",
                  "X XXXXXXXXXX XX XXXXXXXXXX X",
-                 "X                          X",
+                 "XO                        OX",
                  "XXXXXXXXXXXXXXXXXXXXXXXXXXXX"]
 
     def __init__(self):
@@ -123,11 +129,6 @@ class ClassicLayout(BoardLayout):
                          for i in range(ClassicLayout.SIZE[0])
                          for j in range(ClassicLayout.SIZE[1])
                          if ClassicLayout.BOARD_MAP[j][i] == 'X']
-
-        accessible_indices = [(i, j)
-                              for i in range(ClassicLayout.SIZE[0])
-                              for j in range(ClassicLayout.SIZE[1])
-                              if ClassicLayout.BOARD_MAP[j][i] == ' ']
 
         ghost_house_indices = [(i, j)
                                for i in range(ClassicLayout.SIZE[0])
@@ -138,6 +139,18 @@ class ClassicLayout(BoardLayout):
                               for i in range(ClassicLayout.SIZE[0])
                               for j in range(ClassicLayout.SIZE[1])
                               if ClassicLayout.BOARD_MAP[j][i] == 'G']
+
+        big_dots_indices = [(i, j)
+                            for i in range(ClassicLayout.SIZE[0])
+                            for j in range(ClassicLayout.SIZE[1])
+                            if ClassicLayout.BOARD_MAP[j][i] == 'O']
+
+        accessible_indices = [(i, j)
+                              for i in range(ClassicLayout.SIZE[0])
+                              for j in range(ClassicLayout.SIZE[1])
+                              if ClassicLayout.BOARD_MAP[j][i] == ' ']
+
+        accessible_indices += big_dots_indices
 
         ghost_spawn_map = {
             game.GhostNames.inky: (13, 14),
@@ -153,4 +166,5 @@ class ClassicLayout(BoardLayout):
 
         super().__init__(walls_indices, accessible_indices,
                          ghost_spawn_map, ghost_house_indices, ghost_path_indices,
-                         spawn_index, tunnel_indices, ClassicLayout.SIZE)
+                         spawn_index, tunnel_indices, big_dots_indices,
+                         ClassicLayout.SIZE)

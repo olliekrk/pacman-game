@@ -17,28 +17,32 @@ class Ghost(Character):
         super().__init__(board, *groups)
 
         # general attributes
-        # ...
+        self.character_width = self.character_height = self.board.tile_size * 2
 
         # movement-related features
         self.position_tile = board.board_layout.ghost_spawns.get(color)
-        self.position = ((self.position_tile[0] + 0.5) * self.board.tile_size,
-                         (self.position_tile[1] + 0.5) * self.board.tile_size)
+        self.set_position_to_tile_center()
         self.speed = 100
 
         # textures related attributes
         texture_name = './sheets/DinoSprites - ' + color.name + '.png'
         self.texture = pygame.image.load(texture_name)
         self.texture_size = 24
-        self.run_length = 7
+
         self.idle_length = 4
-        self.idle_textures = [self.load_tile_scaled(i) for i in range(0, 4)]
-        self.run_textures = [self.load_tile_scaled(i) for i in range(4, 11)]
+        self.idle_textures = [self.load_tile_scaled(self.texture, i) for i in range(0, 4)]
+        self.kill_length = 7
+        self.kill_textures = [self.load_tile_scaled(self.texture, i) for i in range(4, 11)]
+
+        # textures used when ghosts are vulnerable
+        self.run_texture = pygame.image.load('./sheets/DinoSprites - vulnerable.png')
+        self.run_length = 7
+        self.run_textures = [self.load_tile_scaled(self.run_texture, i) for i in range(10, 17)]
 
         # ghost behaviour attributes
-        self.is_chasing = True
-        self.is_scattered = False
-        self.chase_tile = None
-        self.scatter_tile = None
+        self.is_killing = True
+        self.chase_tile = None  # target tile when ghost is killing
+        self.scatter_tile = None  # target tile when ghost is running (not killing)
 
         # necessary to prohibit ghost from reversing direction while chasing
         self.direction_change_time = pygame.time.get_ticks()
@@ -47,13 +51,18 @@ class Ghost(Character):
     def calculate_distance_to_tile(from_tile, to_tile):
         return sqrt(pow(from_tile[0] - to_tile[0], 2) + pow(from_tile[1] - to_tile[1], 2))
 
-    def load_tile(self, number_of_tile):
+    def load_tile(self, texture, number_of_tile):
         number_of_tile %= self.texture_size
         tile_location_px = number_of_tile * self.texture_size
-        return self.texture.subsurface(tile_location_px, 0, self.texture_size, self.texture_size)
+        return texture.subsurface(tile_location_px, 0, self.texture_size, self.texture_size)
 
     def update(self, dt, *args):
-        self.update_chase_tile(args[0], args[1])
+        if self.is_killing:
+            self.update_chase_tile(args[0], args[1])
+        else:
+            self.chase_tile = self.scatter_tile
+
+        self.update_direction()
         super().update(dt, *args)
 
     def reverse_direction(self):
@@ -97,7 +106,6 @@ class Blinky(Ghost):
 
     def update_chase_tile(self, pacman, _):
         self.chase_tile = pacman.position_tile
-        self.update_direction()
 
 
 class Pinky(Ghost):
@@ -108,7 +116,6 @@ class Pinky(Ghost):
     def update_chase_tile(self, pacman, _):
         switch_tuple = Character.DIRECTION_SWITCH_MAP.get(pacman.direction)
         self.chase_tile = pacman.position_tile[0] + 4 * switch_tuple[0], pacman.position_tile[1] + 4 * switch_tuple[1]
-        self.update_direction()
 
 
 class Inky(Ghost):
@@ -122,7 +129,6 @@ class Inky(Ghost):
         blinky_tile = pacman.position_tile[0] + 2 * switch_tuple[0], pacman.position_tile[1] + 2 * switch_tuple[1]
         blinky_vector = blinky_tile[0] - blinky.position_tile[0], blinky_tile[1] - blinky.position_tile[1]
         self.chase_tile = blinky.position_tile[0] + 2 * blinky_vector[0], blinky.position_tile[1] + 2 * blinky_vector[1]
-        self.update_direction()
 
 
 class Clyde(Ghost):
@@ -136,4 +142,3 @@ class Clyde(Ghost):
             self.chase_tile = self.scatter_tile
         else:
             self.chase_tile = pacman.position_tile
-        self.update_direction()
