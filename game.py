@@ -10,7 +10,7 @@ TITLE = "Pacman WIEiT Edition"
 ICON_TITLE = "Pacman SE"
 
 BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
-TILE_SIZE = 25  # pixels
+TILE_SIZE = 18  # pixels
 SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
 
 MENU_BACKGROUND_COLOR = (255, 255, 26)
@@ -80,6 +80,7 @@ class Game(object):
         self.game_clock = game_clock
         self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.status = GameStatus()
+        self.pause = False
 
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
@@ -98,9 +99,6 @@ class Game(object):
     def main_loop(self):
         self.alive_group.clear(self.game_screen, self.board.background)
         self.dots_group.clear(self.game_screen, self.board.background)
-        pause_menu.disable()
-        main_menu.disable()
-        main_menu.reset(1)
         while not self.finished:
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
@@ -115,11 +113,19 @@ class Game(object):
             if event.type == pygame.QUIT:
                 exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                pause_menu.enable()
+                if self.pause:
+                    self.pause = False
+                else:
+                    self.pause = True
+                    pause_game()
         pause_menu.mainloop(events)
+
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
+        if self.pause:
+            return
+
         # update alive characters (display)
         self.alive_group.update(dt, self.player, self.monsters.get(GhostNames.blinky))
         dirty_rectangles = self.alive_group.draw(self.game_screen)
@@ -137,6 +143,9 @@ class Game(object):
                 self.kill_pacman()
 
     def update_dots(self):
+        if self.pause:
+            return
+
         # check for eaten small dots
         dots_eaten = pygame.sprite.spritecollide(self.player, self.dots_group, dokill=True)
         dots_no = len(dots_eaten)
@@ -168,6 +177,9 @@ class Game(object):
         pygame.display.update(dirty_rectangles)
 
     def update_pacman_direction(self):
+        if self.pause:
+            return
+
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_RIGHT]:
             self.player.change_direction(Directions.RIGHT)
@@ -241,6 +253,18 @@ class Game(object):
 
 
 def run_game():
+    main_menu.disable()
+    game.main_loop()
+
+
+def pause_game():
+    pause_menu.enable()
+
+
+def resume_game():
+    pause_menu.disable()
+    game.pause = False
+    pygame.display.flip()
     game.main_loop()
 
 
@@ -301,17 +325,15 @@ if __name__ == "__main__":
                                 window_height=SCREEN_RESOLUTION[0],
                                 window_width=SCREEN_RESOLUTION[1]
                                 )
-    pause_menu.add_option('Play', run_game)
+    pause_menu.add_option('Resume', resume_game)
     pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
     pause_menu.disable()
-
-    # game.Game(game_screen, game_clock, TILE_SIZE).main_loop()
 
     # Main loop
     while True:
 
         # Tick
-        game_clock.tick(60)
+        # game_clock.tick(60)
 
         events = pygame.event.get()
 
