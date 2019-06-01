@@ -1,6 +1,22 @@
 import board
 import characters
 from ghosts import *
+import os
+import pygame
+import pygameMenu
+from pygameMenu.locals import *
+
+TITLE = "Pacman WIEiT Edition"
+ICON_TITLE = "Pacman SE"
+
+BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
+TILE_SIZE = 25  # pixels
+SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
+
+MENU_BACKGROUND_COLOR = (255, 255, 26)
+COLOR_BACKGROUND = (107, 102, 97)
+COLOR_BLACK = (0, 0, 0)
+COLOR_SELECTED = (255, 153, 0)
 
 
 class GameStatus(object):
@@ -82,6 +98,9 @@ class Game(object):
     def main_loop(self):
         self.alive_group.clear(self.game_screen, self.board.background)
         self.dots_group.clear(self.game_screen, self.board.background)
+        pause_menu.disable()
+        main_menu.disable()
+        main_menu.reset(1)
         while not self.finished:
             dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
@@ -91,9 +110,13 @@ class Game(object):
 
     # maintaining events like mouse/button clicks etc
     def events_loop(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.finished = True
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pause_menu.enable()
+        pause_menu.mainloop(events)
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
@@ -215,3 +238,85 @@ class Game(object):
         self.restart_characters_positions()
         self.dots_group = self.board.prepare_dots()
         self.big_dots_group = self.board.prepare_big_dots()
+
+
+def run_game():
+    game.main_loop()
+
+
+def main_background():
+    game_screen.fill(COLOR_BACKGROUND)
+
+
+def pause_background():
+    return
+
+
+if __name__ == "__main__":
+    os.environ['SDL_VIDEO_CENTERED'] = '1'  # displays the window in the center
+
+    pygame.init()
+    pygame.display.set_caption(TITLE, ICON_TITLE)
+
+    game_screen = pygame.display.set_mode(SCREEN_RESOLUTION)
+    game_clock = pygame.time.Clock()
+    game = Game(game_screen, game_clock, TILE_SIZE)
+
+    # MAIN MENU
+    main_menu = pygameMenu.Menu(game_screen,
+                                bgfun=main_background,
+                                color_selected=COLOR_SELECTED,
+                                font=pygameMenu.fonts.FONT_BEBAS,
+                                font_color=COLOR_BLACK,
+                                font_size=30,
+                                menu_alpha=100,
+                                menu_color=MENU_BACKGROUND_COLOR,
+                                menu_color_title=COLOR_SELECTED,
+                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
+                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
+                                onclose=PYGAME_MENU_DISABLE_CLOSE,
+                                option_shadow=False,
+                                title='Main menu',
+                                window_height=SCREEN_RESOLUTION[0],
+                                window_width=SCREEN_RESOLUTION[1]
+                                )
+    main_menu.add_option('Play', run_game)
+    main_menu.add_option('Quit', PYGAME_MENU_EXIT)
+
+    # PAUSE MENU
+    pause_menu = pygameMenu.Menu(game_screen,
+                                bgfun=pause_background,
+                                color_selected=COLOR_SELECTED,
+                                font=pygameMenu.fonts.FONT_BEBAS,
+                                font_color=COLOR_BLACK,
+                                font_size=30,
+                                menu_alpha=2,
+                                menu_color=MENU_BACKGROUND_COLOR,
+                                menu_color_title=COLOR_SELECTED,
+                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
+                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
+                                onclose=PYGAME_MENU_DISABLE_CLOSE,
+                                option_shadow=False,
+                                title='Pause menu',
+                                window_height=SCREEN_RESOLUTION[0],
+                                window_width=SCREEN_RESOLUTION[1]
+                                )
+    pause_menu.add_option('Play', run_game)
+    pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    pause_menu.disable()
+
+    # game.Game(game_screen, game_clock, TILE_SIZE).main_loop()
+
+    # Main loop
+    while True:
+
+        # Tick
+        game_clock.tick(60)
+
+        events = pygame.event.get()
+
+        # Main menu
+        main_menu.mainloop(events)
+
+        # Flip surface
+        pygame.display.flip()
