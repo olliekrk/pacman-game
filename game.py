@@ -14,7 +14,7 @@ TILE_SIZE = 25  # pixels
 SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
 
 MENU_BACKGROUND_COLOR = (255, 255, 26)
-COLOR_BACKGROUND = (107, 102, 97)
+COLOR_GREY = (107, 102, 97)
 COLOR_BLACK = (0, 0, 0)
 COLOR_SELECTED = (255, 153, 0)
 
@@ -299,16 +299,16 @@ def resume_game():
 
 
 def main_background():
-    game_screen.fill(COLOR_BACKGROUND)
-    pygame.draw.rect(game_screen, COLOR_BLACK, (0, 83, SCREEN_RESOLUTION[0], 10))
-    pygame.draw.rect(game_screen, COLOR_BLACK, (0, 850, SCREEN_RESOLUTION[0], 10))
+    game_screen.fill(COLOR_BLACK)
+    pygame.draw.rect(game_screen, COLOR_GREY, (0, 83, SCREEN_RESOLUTION[0], 10))
+    pygame.draw.rect(game_screen, COLOR_GREY, (0, 850, SCREEN_RESOLUTION[0], 10))
     for i in range(6):
         pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (300 + (i*80), 50, 10, 10))
     for i in range(14):
         pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (10 + (i * 80), 817, 10, 10))
     game_screen.blit(ghost2_texture, (20, 13))
     game_screen.blit(ghost1_texture, (100, 13))
-    game_screen.blit(pacman_texture, (200, 10))
+    game_screen.blit(pacman_texture, (200, 8))
     game_screen.blit(ghost3_texture, (550, 13))
     game_screen.blit(ghost4_texture, (350, 780))
 
