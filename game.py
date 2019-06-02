@@ -57,17 +57,25 @@ class GameStatus(object):
 
     def game_over(self):
         # when player has no lives left
-        print("todo: GAME OVER SCREEN")
-        pass
+        self.reset()
+        game_over_menu.enable()
 
     def level_finished(self):
         # when all the dots are eaten
-        print("todo: LEVEL FINISHED SCREEN")
+        level_completed_menu.enable()
 
         # advance to next level
         self.level_number += 1
         self.killing_activated_time = None
         self.last_kill_time = None
+
+    def reset(self):
+        self.level_number = 1
+        self.player_points = 0
+        self.player_lives = GameStatus.MAX_LIVES
+        self.killing_activated_time = None
+        self.last_kill_time = None
+        self.bonus_multiplier = 0
 
 
 class Game(object):
@@ -122,6 +130,8 @@ class Game(object):
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 pause_game()
         pause_menu.mainloop(events)
+        game_over_menu.mainloop(events)
+        level_completed_menu.mainloop(events)
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
@@ -157,8 +167,9 @@ class Game(object):
 
         # check if there are any dots left (whether level is unfinished)
         if not (self.dots_group or self.big_dots_group):
-            self.status.level_finished()
+            self.pause=True
             self.advance_to_next_level()
+            self.status.level_finished()
 
         self.draw_dots()
 
@@ -204,6 +215,7 @@ class Game(object):
         # handler for event when pacman is eaten by a ghost
         self.status.player_lives -= 1
         if self.status.player_lives == 0:
+            self.pause = True
             self.status.game_over()
         else:
             self.restart_characters_positions()
@@ -250,6 +262,22 @@ def run_game():
     game.main_loop()
 
 
+def new_game():
+    game_over_menu.disable()
+    game.advance_to_next_level()
+    game.pause = False
+    game.first_after_pause = True
+    game.main_loop()
+
+
+def next_level():
+    level_completed_menu.disable()
+    game.advance_to_next_level()
+    game.pause = False
+    game.first_after_pause = True
+    game.main_loop()
+
+
 def pause_game():
     game.pause = True
     game.first_after_pause = True
@@ -259,7 +287,6 @@ def pause_game():
 def resume_game():
     pause_menu.disable()
     game.pause = False
-    pygame.display.flip()
     game.main_loop()
 
 
@@ -269,6 +296,25 @@ def main_background():
 
 def pause_background():
     return
+
+
+def create_menu(title, bgfun, alpha):
+    return pygameMenu.Menu(game_screen,
+                                bgfun=bgfun,
+                                color_selected=COLOR_SELECTED,
+                                font=pygameMenu.fonts.FONT_BEBAS,
+                                font_color=COLOR_BLACK,
+                                font_size=30,
+                                menu_alpha=alpha,
+                                menu_color=MENU_BACKGROUND_COLOR,
+                                menu_color_title=COLOR_SELECTED,
+                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
+                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
+                                onclose=PYGAME_MENU_DISABLE_CLOSE,
+                                option_shadow=False,
+                                title=title,
+                                window_height=SCREEN_RESOLUTION[0],
+                                window_width=SCREEN_RESOLUTION[1])
 
 
 if __name__ == "__main__":
@@ -282,47 +328,27 @@ if __name__ == "__main__":
     game = Game(game_screen, game_clock, TILE_SIZE)
 
     # MAIN MENU
-    main_menu = pygameMenu.Menu(game_screen,
-                                bgfun=main_background,
-                                color_selected=COLOR_SELECTED,
-                                font=pygameMenu.fonts.FONT_BEBAS,
-                                font_color=COLOR_BLACK,
-                                font_size=30,
-                                menu_alpha=100,
-                                menu_color=MENU_BACKGROUND_COLOR,
-                                menu_color_title=COLOR_SELECTED,
-                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
-                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
-                                onclose=PYGAME_MENU_DISABLE_CLOSE,
-                                option_shadow=False,
-                                title='Pacman',
-                                window_height=SCREEN_RESOLUTION[0],
-                                window_width=SCREEN_RESOLUTION[1]
-                                )
+    main_menu = create_menu('Pacman', main_background, 100)
     main_menu.add_option('Play', run_game)
     main_menu.add_option('Quit', PYGAME_MENU_EXIT)
 
     # PAUSE MENU
-    pause_menu = pygameMenu.Menu(game_screen,
-                                bgfun=pause_background,
-                                color_selected=COLOR_SELECTED,
-                                font=pygameMenu.fonts.FONT_BEBAS,
-                                font_color=COLOR_BLACK,
-                                font_size=30,
-                                menu_alpha=2,
-                                menu_color=MENU_BACKGROUND_COLOR,
-                                menu_color_title=COLOR_SELECTED,
-                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
-                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
-                                onclose=PYGAME_MENU_DISABLE_CLOSE,
-                                option_shadow=False,
-                                title='Pause',
-                                window_height=SCREEN_RESOLUTION[0],
-                                window_width=SCREEN_RESOLUTION[1]
-                                )
+    pause_menu = create_menu('Pause', pause_background, 2)
     pause_menu.add_option('Resume', resume_game)
     pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
     pause_menu.disable()
+
+    # GAME OVER MENU
+    game_over_menu = create_menu('Game over', pause_background, 2)
+    game_over_menu.add_option('New Game', new_game)
+    game_over_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    game_over_menu.disable()
+
+    # LEVEL COMPLETED MENU
+    level_completed_menu = create_menu('Level completed', main_background, 100)
+    level_completed_menu.add_option('Next LeveL', next_level)
+    level_completed_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    level_completed_menu.disable()
 
     # Main loop
     while True:
