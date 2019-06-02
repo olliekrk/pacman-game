@@ -63,12 +63,13 @@ class GameStatus(object):
 
     def level_finished(self):
         # when all the dots are eaten
-        level_completed_menu.enable()
-
-        # advance to next level
         self.level_number += 1
         self.killing_activated_time = None
         self.last_kill_time = None
+        self.bonus_multiplier = 0
+        self.player_points = 0
+        self.player_lives = GameStatus.MAX_LIVES
+        level_completed_menu.enable()
 
     def reset(self):
         self.level_number = 1
@@ -221,6 +222,7 @@ class Game(object):
             ghost.position_tile = self.board.board_layout.ghost_spawns.get(colour)
             ghost.set_position_to_tile_center()
             ghost.direction = Directions.UP
+            ghost.is_killing = True
 
         # refresh dots (draw)
         for dot in self.dots_group.sprites():
@@ -276,12 +278,13 @@ class Game(object):
         self.restart_characters_positions()
         self.dots_group = self.board.prepare_dots()
         self.big_dots_group = self.board.prepare_big_dots()
-        self.status.reset()
 
     def update_information_panel(self):
         points = self.font.render('SCORE:   '+str(self.status.player_points), True, (255, 255, 255), None)
+        level = self.font.render('LEVEL:   '+str(self.status.level_number), True, (255, 255, 255), None)
         self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
         self.game_screen.blit(points, (0, 786))
+        self.game_screen.blit(level, (0, 816))
         for i in range(0, self.status.player_lives):
             self.game_screen.blit(self.life_texture, (700 - self.life_size - (i*self.life_size), 776))
         if self.is_special_communique_set:
@@ -307,6 +310,7 @@ def new_game():
     game.advance_to_next_level()
     game.pause = False
     game.first_after_pause = True
+    game.status.reset()
     game.main_loop()
 
 
