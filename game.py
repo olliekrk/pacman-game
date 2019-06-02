@@ -249,7 +249,8 @@ class Game(object):
         if self.player.is_killing:
             current_time = pygame.time.get_ticks()
             if self.status.killing_activated_time is not None and \
-                    abs(current_time - self.pause_end_ticks + self.pause_start_ticks - self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
+                    abs(current_time - self.pause_end_ticks + self.pause_start_ticks -
+                        self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
                 self.player.is_killing = False
                 for monster in self.monsters.values():
                     monster.is_killing = True
@@ -299,6 +300,17 @@ def resume_game():
 
 def main_background():
     game_screen.fill(COLOR_BACKGROUND)
+    pygame.draw.rect(game_screen, COLOR_BLACK, (0, 83, SCREEN_RESOLUTION[0], 10))
+    pygame.draw.rect(game_screen, COLOR_BLACK, (0, 850, SCREEN_RESOLUTION[0], 10))
+    for i in range(6):
+        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (300 + (i*80), 50, 10, 10))
+    for i in range(14):
+        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (10 + (i * 80), 817, 10, 10))
+    game_screen.blit(ghost2_texture, (20, 13))
+    game_screen.blit(ghost1_texture, (100, 13))
+    game_screen.blit(pacman_texture, (200, 10))
+    game_screen.blit(ghost3_texture, (550, 13))
+    game_screen.blit(ghost4_texture, (350, 780))
 
 
 def no_background():
@@ -307,11 +319,11 @@ def no_background():
 
 def create_menu(title, bgfun, alpha):
     return pygameMenu.Menu(game_screen, bgfun=bgfun, color_selected=COLOR_SELECTED, font=pygameMenu.fonts.FONT_BEBAS,
-                           font_color=COLOR_BLACK, font_size=30, menu_alpha=alpha, menu_color=MENU_BACKGROUND_COLOR,
+                           font_color=COLOR_BLACK, font_size=40, menu_alpha=alpha, menu_color=MENU_BACKGROUND_COLOR,
                            menu_color_title=COLOR_SELECTED, menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
                            menu_width=int(SCREEN_RESOLUTION[0] * 0.6), onclose=PYGAME_MENU_DISABLE_CLOSE,
-                           option_shadow=False, title=title, window_height=SCREEN_RESOLUTION[0],
-                           window_width=SCREEN_RESOLUTION[1])
+                           option_shadow=False, title=title, window_height=SCREEN_RESOLUTION[1],
+                           window_width=SCREEN_RESOLUTION[0])
 
 
 if __name__ == "__main__":
@@ -323,6 +335,20 @@ if __name__ == "__main__":
     game_screen = pygame.display.set_mode(SCREEN_RESOLUTION)
     game_clock = pygame.time.Clock()
     game = Game(game_screen, game_clock, TILE_SIZE)
+
+    # BACKGROUND TEXTURES
+    pacman_texture = game.player.load_tile(game.player.texture, 10)
+    pacman_texture = pygame.transform.scale(pacman_texture, (80, 80))
+    ghost1_texture = game.monsters.get(GhostNames.blinky).load_tile(game.monsters.get(GhostNames.blinky).texture, 9)
+    ghost1_texture = pygame.transform.scale(ghost1_texture, (80, 80))
+    ghost2_texture = game.monsters.get(GhostNames.inky).load_tile(game.monsters.get(GhostNames.inky).texture, 16)
+    ghost2_texture = pygame.transform.scale(ghost2_texture, (80, 80))
+    ghost3_texture = game.monsters.get(GhostNames.pinky).load_tile(game.monsters.get(GhostNames.pinky).texture, 8)
+    ghost3_texture = pygame.transform.scale(ghost3_texture, (80, 80))
+    ghost3_texture = pygame.transform.flip(ghost3_texture, True, False)
+    ghost4_texture = game.monsters.get(GhostNames.clyde).load_tile(game.monsters.get(GhostNames.clyde).texture, 6)
+    ghost4_texture = pygame.transform.scale(ghost4_texture, (80, 80))
+    ghost4_texture = pygame.transform.flip(ghost4_texture, True, False)
 
     # MAIN MENU
     main_menu = create_menu('Pacman', main_background, 100)
