@@ -1,3 +1,5 @@
+from time import sleep
+
 import board
 import characters
 from ghosts import *
@@ -57,7 +59,6 @@ class GameStatus(object):
 
     def game_over(self):
         # when player has no lives left
-        self.reset()
         game_over_menu.enable()
 
     def level_finished(self):
@@ -88,11 +89,21 @@ class Game(object):
         self.game_clock = game_clock
         self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.status = GameStatus()
+
+        # pause properties
         self.pause = False
         self.first_after_pause = True
         self.last_dt = 0
         self.pause_start_ticks = 0
         self.pause_end_ticks = 0
+
+        # information panel properties
+        self.font = pygame.font.Font('freesansbold.ttf', 20)
+        self.life_texture = pygame.image.load('./sheets/life.png')
+        self.life_size = 40
+        self.life_texture = pygame.transform.scale(self.life_texture, (self.life_size, self.life_size))
+        self.special_communique = ''
+        self.is_special_communique_set = False
 
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
@@ -122,6 +133,7 @@ class Game(object):
                 self.update_pacman_direction()
                 self.update_sprites(dt)
                 self.update_dots()
+                self.update_information_panel()
 
     # maintaining events like mouse/button clicks etc
     def events_loop(self):
@@ -202,6 +214,7 @@ class Game(object):
         self.player.set_position_to_tile_center()
         self.player.is_running = False
         self.player.direction = Directions.UP
+        self.player.is_killing = False
 
         # restart ghosts
         for colour, ghost in self.monsters.items():
@@ -222,6 +235,8 @@ class Game(object):
             self.status.game_over()
         else:
             self.restart_characters_positions()
+            self.special_communique = 'You have been killed. Try again in '
+            self.is_special_communique_set = True
 
     def kill_ghosts(self, ghosts_colliding):
         # handler for event when ghosts are eaten by pacman
@@ -261,6 +276,25 @@ class Game(object):
         self.restart_characters_positions()
         self.dots_group = self.board.prepare_dots()
         self.big_dots_group = self.board.prepare_big_dots()
+        self.status.reset()
+
+    def update_information_panel(self):
+        points = self.font.render('SCORE:   '+str(self.status.player_points), True, (255, 255, 255), None)
+        self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
+        self.game_screen.blit(points, (0, 786))
+        for i in range(0, self.status.player_lives):
+            self.game_screen.blit(self.life_texture, (700 - self.life_size - (i*self.life_size), 776))
+        if self.is_special_communique_set:
+            for i in range(0, 3):
+                communique = self.font.render(self.special_communique + str(3-i), True, (255, 255, 255), None)
+                self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
+                self.game_screen.blit(communique, (160, 820))
+                pygame.display.flip()
+                sleep(1)
+            self.is_special_communique_set = False
+            self.special_communique = ''
+            self.first_after_pause = True
+        pygame.display.flip()
 
 
 def run_game():
@@ -313,7 +347,7 @@ def main_background():
     game_screen.blit(ghost4_texture, (350, 780))
 
 
-def no_background():
+def empty_function():
     return
 
 
@@ -323,7 +357,7 @@ def create_menu(title, bgfun, alpha):
                            menu_color_title=COLOR_SELECTED, menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
                            menu_width=int(SCREEN_RESOLUTION[0] * 0.6), onclose=PYGAME_MENU_DISABLE_CLOSE,
                            option_shadow=False, title=title, window_height=SCREEN_RESOLUTION[1],
-                           window_width=SCREEN_RESOLUTION[0])
+                           window_width=SCREEN_RESOLUTION[0], draw_select=False)
 
 
 if __name__ == "__main__":
@@ -356,13 +390,13 @@ if __name__ == "__main__":
     main_menu.add_option('Quit', PYGAME_MENU_EXIT)
 
     # PAUSE MENU
-    pause_menu = create_menu('Pause', no_background, 2)
+    pause_menu = create_menu('Pause', empty_function, 2)
     pause_menu.add_option('Resume', resume_game)
     pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
     pause_menu.disable()
 
     # GAME OVER MENU
-    game_over_menu = create_menu('Game over', no_background, 2)
+    game_over_menu = create_menu('Game over', empty_function, 2)
     game_over_menu.add_option('New Game', new_game)
     game_over_menu.add_option('Quit', PYGAME_MENU_EXIT)
     game_over_menu.disable()
