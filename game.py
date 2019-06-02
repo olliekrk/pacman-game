@@ -10,7 +10,7 @@ TITLE = "Pacman WIEiT Edition"
 ICON_TITLE = "Pacman SE"
 
 BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
-TILE_SIZE = 18  # pixels
+TILE_SIZE = 25  # pixels
 SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
 
 MENU_BACKGROUND_COLOR = (255, 255, 26)
@@ -81,6 +81,8 @@ class Game(object):
         self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.status = GameStatus()
         self.pause = False
+        self.first_after_pause = True
+        self.last_dt = 0
 
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
@@ -100,11 +102,16 @@ class Game(object):
         self.alive_group.clear(self.game_screen, self.board.background)
         self.dots_group.clear(self.game_screen, self.board.background)
         while not self.finished:
-            dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
-            self.update_pacman_direction()
-            self.update_sprites(dt)
-            self.update_dots()
+            if not self.pause:
+                dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
+                if self.first_after_pause:
+                    dt = self.last_dt
+                    self.first_after_pause = False
+                self.last_dt = dt
+                self.update_pacman_direction()
+                self.update_sprites(dt)
+                self.update_dots()
 
     # maintaining events like mouse/button clicks etc
     def events_loop(self):
@@ -113,19 +120,11 @@ class Game(object):
             if event.type == pygame.QUIT:
                 exit()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                if self.pause:
-                    self.pause = False
-                else:
-                    self.pause = True
-                    pause_game()
+                pause_game()
         pause_menu.mainloop(events)
-
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
-        if self.pause:
-            return
-
         # update alive characters (display)
         self.alive_group.update(dt, self.player, self.monsters.get(GhostNames.blinky))
         dirty_rectangles = self.alive_group.draw(self.game_screen)
@@ -143,9 +142,6 @@ class Game(object):
                 self.kill_pacman()
 
     def update_dots(self):
-        if self.pause:
-            return
-
         # check for eaten small dots
         dots_eaten = pygame.sprite.spritecollide(self.player, self.dots_group, dokill=True)
         dots_no = len(dots_eaten)
@@ -177,9 +173,6 @@ class Game(object):
         pygame.display.update(dirty_rectangles)
 
     def update_pacman_direction(self):
-        if self.pause:
-            return
-
         keys_pressed = pygame.key.get_pressed()
         if keys_pressed[pygame.K_RIGHT]:
             self.player.change_direction(Directions.RIGHT)
@@ -258,6 +251,8 @@ def run_game():
 
 
 def pause_game():
+    game.pause = True
+    game.first_after_pause = True
     pause_menu.enable()
 
 
@@ -300,7 +295,7 @@ if __name__ == "__main__":
                                 menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
                                 onclose=PYGAME_MENU_DISABLE_CLOSE,
                                 option_shadow=False,
-                                title='Main menu',
+                                title='Pacman',
                                 window_height=SCREEN_RESOLUTION[0],
                                 window_width=SCREEN_RESOLUTION[1]
                                 )
@@ -321,7 +316,7 @@ if __name__ == "__main__":
                                 menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
                                 onclose=PYGAME_MENU_DISABLE_CLOSE,
                                 option_shadow=False,
-                                title='Pause menu',
+                                title='Pause',
                                 window_height=SCREEN_RESOLUTION[0],
                                 window_width=SCREEN_RESOLUTION[1]
                                 )
@@ -331,14 +326,6 @@ if __name__ == "__main__":
 
     # Main loop
     while True:
-
-        # Tick
-        # game_clock.tick(60)
-
         events = pygame.event.get()
-
-        # Main menu
         main_menu.mainloop(events)
-
-        # Flip surface
         pygame.display.flip()
