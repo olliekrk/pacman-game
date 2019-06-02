@@ -130,6 +130,7 @@ class Game(object):
                 if self.first_after_pause:
                     dt = self.last_dt
                     self.first_after_pause = False
+                    self.refresh_game_screen()
                 self.last_dt = dt
                 self.update_pacman_direction()
                 self.update_sprites(dt)
@@ -137,7 +138,8 @@ class Game(object):
                 self.update_information_panel()
 
     # maintaining events like mouse/button clicks etc
-    def events_loop(self):
+    @staticmethod
+    def events_loop():
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
@@ -147,6 +149,13 @@ class Game(object):
         pause_menu.mainloop(events)
         game_over_menu.mainloop(events)
         level_completed_menu.mainloop(events)
+
+    def refresh_game_screen(self):
+        self.game_screen.blit(self.board.background, (0, 0))
+        for dot in self.dots_group:
+            dot.dirty = 1
+        for big_dot in self.big_dots_group:
+            big_dot.dirty = 1
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
@@ -164,7 +173,10 @@ class Game(object):
             if self.player.is_killing:
                 self.kill_ghosts(ghosts_colliding)
             else:
-                self.kill_pacman()
+                for ghost in ghosts_colliding:
+                    if self.player.is_colliding(ghost):
+                        self.kill_pacman()
+                        return
 
     def update_dots(self):
         # check for eaten small dots
@@ -182,7 +194,7 @@ class Game(object):
 
         # check if there are any dots left (whether level is unfinished)
         if not (self.dots_group or self.big_dots_group):
-            self.pause=True
+            self.pause = True
             self.advance_to_next_level()
             self.status.level_finished()
 
@@ -237,11 +249,15 @@ class Game(object):
             self.status.game_over()
         else:
             self.restart_characters_positions()
-            self.special_communique = 'You have been killed. Try again in '
+            self.special_communique = 'You have been killed. Continue in '
             self.is_special_communique_set = True
 
     def kill_ghosts(self, ghosts_colliding):
         # handler for event when ghosts are eaten by pacman
+        for ghost in ghosts_colliding:
+            if not self.player.is_colliding(ghost):
+                ghosts_colliding.remove(ghost)
+
         self.status.add_ghost_kill_points(len(ghosts_colliding))
 
         # return ghost to a spawn
@@ -258,6 +274,7 @@ class Game(object):
             monster.reverse_direction()
 
         self.player.is_killing = True
+        self.player.speed += Pacman.SPEED_BONUS
         self.status.killing_activated_time = pygame.time.get_ticks()
         self.pause_start_ticks = 0
         self.pause_end_ticks = 0
@@ -269,6 +286,7 @@ class Game(object):
                     abs(current_time - self.pause_end_ticks + self.pause_start_ticks -
                         self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
                 self.player.is_killing = False
+                self.player.speed -= Pacman.SPEED_BONUS
                 for monster in self.monsters.values():
                     monster.is_killing = True
 
@@ -280,20 +298,21 @@ class Game(object):
         self.big_dots_group = self.board.prepare_big_dots()
 
     def update_information_panel(self):
-        points = self.font.render('SCORE:   '+str(self.status.player_points), True, (255, 255, 255), None)
-        level = self.font.render('LEVEL:   '+str(self.status.level_number), True, (255, 255, 255), None)
+        points = self.font.render('SCORE:   ' + str(self.status.player_points), True, (255, 255, 255), None)
+        level = self.font.render('LEVEL:   ' + str(self.status.level_number), True, (255, 255, 255), None)
         self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
         self.game_screen.blit(points, (0, 786))
         self.game_screen.blit(level, (0, 816))
         for i in range(0, self.status.player_lives):
-            self.game_screen.blit(self.life_texture, (700 - self.life_size - (i*self.life_size), 776))
+            self.game_screen.blit(self.life_texture, (700 - self.life_size - (i * self.life_size), 776))
         if self.player.is_killing:
             ticks = pygame.time.get_ticks()
-            time = self.font.render('TIME TO THE END OF KILLING MODE:   ' + str(5 - int(((ticks - self.status.killing_activated_time) / 1000))), True, (255, 255, 255), None)
+            killing_time = 5.0 - (ticks - self.status.killing_activated_time) / 1000.0
+            time = self.font.render("KILLING TIME LEFT: %.2f s" % killing_time, True, (255, 255, 255), None)
             self.game_screen.blit(time, (0, 846))
         if self.is_special_communique_set:
             for i in range(0, 3):
-                communique = self.font.render(self.special_communique + str(3-i), True, (255, 255, 255), None)
+                communique = self.font.render(self.special_communique + str(3 - i), True, (255, 255, 255), None)
                 self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
                 self.game_screen.blit(communique, (160, 820))
                 pygame.display.flip()
@@ -345,7 +364,7 @@ def main_background():
     pygame.draw.rect(game_screen, COLOR_GREY, (0, 83, SCREEN_RESOLUTION[0], 10))
     pygame.draw.rect(game_screen, COLOR_GREY, (0, 850, SCREEN_RESOLUTION[0], 10))
     for i in range(6):
-        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (300 + (i*80), 50, 10, 10))
+        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (300 + (i * 80), 50, 10, 10))
     for i in range(14):
         pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (10 + (i * 80), 817, 10, 10))
     game_screen.blit(ghost2_texture, (20, 13))
