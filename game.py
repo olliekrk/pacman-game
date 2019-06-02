@@ -280,13 +280,13 @@ def next_level():
 
 def pause_game():
     game.pause = True
-    game.first_after_pause = True
     pause_menu.enable()
 
 
 def resume_game():
     pause_menu.disable()
     game.pause = False
+    game.first_after_pause = True
     game.main_loop()
 
 
@@ -294,27 +294,17 @@ def main_background():
     game_screen.fill(COLOR_BACKGROUND)
 
 
-def pause_background():
+def no_background():
     return
 
 
 def create_menu(title, bgfun, alpha):
-    return pygameMenu.Menu(game_screen,
-                                bgfun=bgfun,
-                                color_selected=COLOR_SELECTED,
-                                font=pygameMenu.fonts.FONT_BEBAS,
-                                font_color=COLOR_BLACK,
-                                font_size=30,
-                                menu_alpha=alpha,
-                                menu_color=MENU_BACKGROUND_COLOR,
-                                menu_color_title=COLOR_SELECTED,
-                                menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
-                                menu_width=int(SCREEN_RESOLUTION[0] * 0.6),
-                                onclose=PYGAME_MENU_DISABLE_CLOSE,
-                                option_shadow=False,
-                                title=title,
-                                window_height=SCREEN_RESOLUTION[0],
-                                window_width=SCREEN_RESOLUTION[1])
+    return pygameMenu.Menu(game_screen, bgfun=bgfun, color_selected=COLOR_SELECTED, font=pygameMenu.fonts.FONT_BEBAS,
+                           font_color=COLOR_BLACK, font_size=30, menu_alpha=alpha, menu_color=MENU_BACKGROUND_COLOR,
+                           menu_color_title=COLOR_SELECTED, menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
+                           menu_width=int(SCREEN_RESOLUTION[0] * 0.6), onclose=PYGAME_MENU_DISABLE_CLOSE,
+                           option_shadow=False, title=title, window_height=SCREEN_RESOLUTION[0],
+                           window_width=SCREEN_RESOLUTION[1])
 
 
 if __name__ == "__main__":
@@ -333,13 +323,13 @@ if __name__ == "__main__":
     main_menu.add_option('Quit', PYGAME_MENU_EXIT)
 
     # PAUSE MENU
-    pause_menu = create_menu('Pause', pause_background, 2)
+    pause_menu = create_menu('Pause', no_background, 2)
     pause_menu.add_option('Resume', resume_game)
     pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
     pause_menu.disable()
 
     # GAME OVER MENU
-    game_over_menu = create_menu('Game over', pause_background, 2)
+    game_over_menu = create_menu('Game over', no_background, 2)
     game_over_menu.add_option('New Game', new_game)
     game_over_menu.add_option('Quit', PYGAME_MENU_EXIT)
     game_over_menu.disable()
