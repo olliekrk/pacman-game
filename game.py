@@ -91,6 +91,8 @@ class Game(object):
         self.pause = False
         self.first_after_pause = True
         self.last_dt = 0
+        self.pause_start_ticks = 0
+        self.pause_end_ticks = 0
 
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
@@ -239,12 +241,14 @@ class Game(object):
 
         self.player.is_killing = True
         self.status.killing_activated_time = pygame.time.get_ticks()
+        self.pause_start_ticks = 0
+        self.pause_end_ticks = 0
 
     def check_or_deactivate_pacman_killing(self):
         if self.player.is_killing:
             current_time = pygame.time.get_ticks()
             if self.status.killing_activated_time is not None and \
-                    abs(current_time - self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
+                    abs(current_time - self.pause_end_ticks + self.pause_start_ticks - self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
                 self.player.is_killing = False
                 for monster in self.monsters.values():
                     monster.is_killing = True
@@ -280,12 +284,14 @@ def next_level():
 
 def pause_game():
     game.pause = True
+    game.pause_start_ticks = pygame.time.get_ticks()
     pause_menu.enable()
 
 
 def resume_game():
     pause_menu.disable()
     game.pause = False
+    game.pause_end_ticks = pygame.time.get_ticks()
     game.first_after_pause = True
     game.main_loop()
 
