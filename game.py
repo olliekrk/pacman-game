@@ -1,6 +1,24 @@
+from time import sleep
+
 import board
 import characters
 from ghosts import *
+import os
+import pygame
+import pygameMenu
+from pygameMenu.locals import *
+
+TITLE = "Pacman WIEiT Edition"
+ICON_TITLE = "Pacman SE"
+
+BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
+TILE_SIZE = 25  # pixels
+SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
+
+MENU_BACKGROUND_COLOR = (255, 255, 26)
+COLOR_GREY = (107, 102, 97)
+COLOR_BLACK = (0, 0, 0)
+COLOR_SELECTED = (255, 153, 0)
 
 
 class GameStatus(object):
@@ -41,17 +59,25 @@ class GameStatus(object):
 
     def game_over(self):
         # when player has no lives left
-        print("todo: GAME OVER SCREEN")
-        pass
+        game_over_menu.enable()
 
     def level_finished(self):
         # when all the dots are eaten
-        print("todo: LEVEL FINISHED SCREEN")
-
-        # advance to next level
         self.level_number += 1
         self.killing_activated_time = None
         self.last_kill_time = None
+        self.bonus_multiplier = 0
+        self.player_points = 0
+        self.player_lives = GameStatus.MAX_LIVES
+        level_completed_menu.enable()
+
+    def reset(self):
+        self.level_number = 1
+        self.player_points = 0
+        self.player_lives = GameStatus.MAX_LIVES
+        self.killing_activated_time = None
+        self.last_kill_time = None
+        self.bonus_multiplier = 0
 
 
 class Game(object):
@@ -64,6 +90,21 @@ class Game(object):
         self.game_clock = game_clock
         self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         self.status = GameStatus()
+
+        # pause properties
+        self.pause = False
+        self.first_after_pause = True
+        self.last_dt = 0
+        self.pause_start_ticks = 0
+        self.pause_end_ticks = 0
+
+        # information panel properties
+        self.font = pygame.font.Font('freesansbold.ttf', 20)
+        self.life_texture = pygame.image.load('./sheets/life.png')
+        self.life_size = 40
+        self.life_texture = pygame.transform.scale(self.life_texture, (self.life_size, self.life_size))
+        self.special_communique = ''
+        self.is_special_communique_set = False
 
         self.ghosts_group = pygame.sprite.LayeredDirty()
         self.alive_group = pygame.sprite.LayeredDirty()
@@ -83,17 +124,29 @@ class Game(object):
         self.alive_group.clear(self.game_screen, self.board.background)
         self.dots_group.clear(self.game_screen, self.board.background)
         while not self.finished:
-            dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
             self.events_loop()
-            self.update_pacman_direction()
-            self.update_sprites(dt)
-            self.update_dots()
+            if not self.pause:
+                dt = self.game_clock.tick(Game.FPS_LIMIT) / Game.TICKS_PER_SEC
+                if self.first_after_pause:
+                    dt = self.last_dt
+                    self.first_after_pause = False
+                self.last_dt = dt
+                self.update_pacman_direction()
+                self.update_sprites(dt)
+                self.update_dots()
+                self.update_information_panel()
 
     # maintaining events like mouse/button clicks etc
     def events_loop(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.finished = True
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pause_game()
+        pause_menu.mainloop(events)
+        game_over_menu.mainloop(events)
+        level_completed_menu.mainloop(events)
 
     # updating and drawing every alive character and collectibles
     def update_sprites(self, dt):
@@ -129,8 +182,9 @@ class Game(object):
 
         # check if there are any dots left (whether level is unfinished)
         if not (self.dots_group or self.big_dots_group):
-            self.status.level_finished()
+            self.pause=True
             self.advance_to_next_level()
+            self.status.level_finished()
 
         self.draw_dots()
 
@@ -160,12 +214,15 @@ class Game(object):
         self.player.position_tile = self.board.board_layout.spawn
         self.player.set_position_to_tile_center()
         self.player.is_running = False
+        self.player.direction = Directions.UP
+        self.player.is_killing = False
 
         # restart ghosts
         for colour, ghost in self.monsters.items():
             ghost.position_tile = self.board.board_layout.ghost_spawns.get(colour)
             ghost.set_position_to_tile_center()
             ghost.direction = Directions.UP
+            ghost.is_killing = True
 
         # refresh dots (draw)
         for dot in self.dots_group.sprites():
@@ -176,9 +233,12 @@ class Game(object):
         # handler for event when pacman is eaten by a ghost
         self.status.player_lives -= 1
         if self.status.player_lives == 0:
+            self.pause = True
             self.status.game_over()
         else:
             self.restart_characters_positions()
+            self.special_communique = 'You have been killed. Try again in '
+            self.is_special_communique_set = True
 
     def kill_ghosts(self, ghosts_colliding):
         # handler for event when ghosts are eaten by pacman
@@ -199,12 +259,15 @@ class Game(object):
 
         self.player.is_killing = True
         self.status.killing_activated_time = pygame.time.get_ticks()
+        self.pause_start_ticks = 0
+        self.pause_end_ticks = 0
 
     def check_or_deactivate_pacman_killing(self):
         if self.player.is_killing:
             current_time = pygame.time.get_ticks()
             if self.status.killing_activated_time is not None and \
-                    abs(current_time - self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
+                    abs(current_time - self.pause_end_ticks + self.pause_start_ticks -
+                        self.status.killing_activated_time) / 1000 > GameStatus.KILLING_DURATION:
                 self.player.is_killing = False
                 for monster in self.monsters.values():
                     monster.is_killing = True
@@ -215,3 +278,145 @@ class Game(object):
         self.restart_characters_positions()
         self.dots_group = self.board.prepare_dots()
         self.big_dots_group = self.board.prepare_big_dots()
+
+    def update_information_panel(self):
+        points = self.font.render('SCORE:   '+str(self.status.player_points), True, (255, 255, 255), None)
+        level = self.font.render('LEVEL:   '+str(self.status.level_number), True, (255, 255, 255), None)
+        self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
+        self.game_screen.blit(points, (0, 786))
+        self.game_screen.blit(level, (0, 816))
+        for i in range(0, self.status.player_lives):
+            self.game_screen.blit(self.life_texture, (700 - self.life_size - (i*self.life_size), 776))
+        if self.player.is_killing:
+            ticks = pygame.time.get_ticks()
+            time = self.font.render('TIME TO THE END OF KILLING MODE:   ' + str(5 - int(((ticks - self.status.killing_activated_time) / 1000))), True, (255, 255, 255), None)
+            self.game_screen.blit(time, (0, 846))
+        if self.is_special_communique_set:
+            for i in range(0, 3):
+                communique = self.font.render(self.special_communique + str(3-i), True, (255, 255, 255), None)
+                self.game_screen.fill(COLOR_BLACK, (0, 776, 700, 125))
+                self.game_screen.blit(communique, (160, 820))
+                pygame.display.flip()
+                sleep(1)
+            self.is_special_communique_set = False
+            self.special_communique = ''
+            self.first_after_pause = True
+        pygame.display.flip()
+
+
+def run_game():
+    main_menu.disable()
+    game.main_loop()
+
+
+def new_game():
+    game_over_menu.disable()
+    game.advance_to_next_level()
+    game.pause = False
+    game.first_after_pause = True
+    game.status.reset()
+    game.main_loop()
+
+
+def next_level():
+    level_completed_menu.disable()
+    game.advance_to_next_level()
+    game.pause = False
+    game.first_after_pause = True
+    game.main_loop()
+
+
+def pause_game():
+    game.pause = True
+    game.pause_start_ticks = pygame.time.get_ticks()
+    pause_menu.enable()
+
+
+def resume_game():
+    pause_menu.disable()
+    game.pause = False
+    game.pause_end_ticks = pygame.time.get_ticks()
+    game.first_after_pause = True
+    game.main_loop()
+
+
+def main_background():
+    game_screen.fill(COLOR_BLACK)
+    pygame.draw.rect(game_screen, COLOR_GREY, (0, 83, SCREEN_RESOLUTION[0], 10))
+    pygame.draw.rect(game_screen, COLOR_GREY, (0, 850, SCREEN_RESOLUTION[0], 10))
+    for i in range(6):
+        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (300 + (i*80), 50, 10, 10))
+    for i in range(14):
+        pygame.draw.rect(game_screen, MENU_BACKGROUND_COLOR, (10 + (i * 80), 817, 10, 10))
+    game_screen.blit(ghost2_texture, (20, 13))
+    game_screen.blit(ghost1_texture, (100, 13))
+    game_screen.blit(pacman_texture, (200, 8))
+    game_screen.blit(ghost3_texture, (550, 13))
+    game_screen.blit(ghost4_texture, (350, 780))
+
+
+def empty_function():
+    return
+
+
+def create_menu(title, bgfun, alpha):
+    return pygameMenu.Menu(game_screen, bgfun=bgfun, color_selected=COLOR_SELECTED, font=pygameMenu.fonts.FONT_BEBAS,
+                           font_color=COLOR_BLACK, font_size=40, menu_alpha=alpha, menu_color=MENU_BACKGROUND_COLOR,
+                           menu_color_title=COLOR_SELECTED, menu_height=int(SCREEN_RESOLUTION[1] * 0.6),
+                           menu_width=int(SCREEN_RESOLUTION[0] * 0.6), onclose=PYGAME_MENU_DISABLE_CLOSE,
+                           option_shadow=False, title=title, window_height=SCREEN_RESOLUTION[1],
+                           window_width=SCREEN_RESOLUTION[0], draw_select=False)
+
+
+if __name__ == "__main__":
+    os.environ['SDL_VIDEO_CENTERED'] = '1'  # displays the window in the center
+
+    pygame.init()
+    pygame.display.set_caption(TITLE, ICON_TITLE)
+
+    game_screen = pygame.display.set_mode(SCREEN_RESOLUTION)
+    game_clock = pygame.time.Clock()
+    game = Game(game_screen, game_clock, TILE_SIZE)
+
+    # BACKGROUND TEXTURES
+    pacman_texture = game.player.load_tile(game.player.texture, 10)
+    pacman_texture = pygame.transform.scale(pacman_texture, (80, 80))
+    ghost1_texture = game.monsters.get(GhostNames.blinky).load_tile(game.monsters.get(GhostNames.blinky).texture, 9)
+    ghost1_texture = pygame.transform.scale(ghost1_texture, (80, 80))
+    ghost2_texture = game.monsters.get(GhostNames.inky).load_tile(game.monsters.get(GhostNames.inky).texture, 16)
+    ghost2_texture = pygame.transform.scale(ghost2_texture, (80, 80))
+    ghost3_texture = game.monsters.get(GhostNames.pinky).load_tile(game.monsters.get(GhostNames.pinky).texture, 8)
+    ghost3_texture = pygame.transform.scale(ghost3_texture, (80, 80))
+    ghost3_texture = pygame.transform.flip(ghost3_texture, True, False)
+    ghost4_texture = game.monsters.get(GhostNames.clyde).load_tile(game.monsters.get(GhostNames.clyde).texture, 6)
+    ghost4_texture = pygame.transform.scale(ghost4_texture, (80, 80))
+    ghost4_texture = pygame.transform.flip(ghost4_texture, True, False)
+
+    # MAIN MENU
+    main_menu = create_menu('Pacman', main_background, 100)
+    main_menu.add_option('Play', run_game)
+    main_menu.add_option('Quit', PYGAME_MENU_EXIT)
+
+    # PAUSE MENU
+    pause_menu = create_menu('Pause', empty_function, 2)
+    pause_menu.add_option('Resume', resume_game)
+    pause_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    pause_menu.disable()
+
+    # GAME OVER MENU
+    game_over_menu = create_menu('Game over', empty_function, 2)
+    game_over_menu.add_option('New Game', new_game)
+    game_over_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    game_over_menu.disable()
+
+    # LEVEL COMPLETED MENU
+    level_completed_menu = create_menu('Level completed', main_background, 100)
+    level_completed_menu.add_option('Next LeveL', next_level)
+    level_completed_menu.add_option('Quit', PYGAME_MENU_EXIT)
+    level_completed_menu.disable()
+
+    # Main loop
+    while True:
+        events = pygame.event.get()
+        main_menu.mainloop(events)
+        pygame.display.flip()
