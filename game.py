@@ -287,6 +287,10 @@ class Game(object):
         self.game_screen.blit(level, (0, 816))
         for i in range(0, self.status.player_lives):
             self.game_screen.blit(self.life_texture, (700 - self.life_size - (i*self.life_size), 776))
+        if self.player.is_killing:
+            ticks = pygame.time.get_ticks()
+            time = self.font.render('TIME TO THE END OF KILLING MODE:   ' + str(5 - int(((ticks - self.status.killing_activated_time) / 1000))), True, (255, 255, 255), None)
+            self.game_screen.blit(time, (0, 846))
         if self.is_special_communique_set:
             for i in range(0, 3):
                 communique = self.font.render(self.special_communique + str(3-i), True, (255, 255, 255), None)
