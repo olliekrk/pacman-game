@@ -201,6 +201,7 @@ class Game(object):
         self.player.position_tile = self.board.board_layout.spawn
         self.player.set_position_to_tile_center()
         self.player.is_running = False
+        self.player.direction = Directions.UP
 
         # restart ghosts
         for colour, ghost in self.monsters.items():
