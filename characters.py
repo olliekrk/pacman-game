@@ -2,7 +2,7 @@ import abc
 from enum import Enum
 
 import pygame
-from math import floor
+from math import floor, sqrt
 
 
 class Directions(Enum):
@@ -169,9 +169,14 @@ class Character(pygame.sprite.DirtySprite):
         if self.direction in [Directions.LEFT, Directions.UP]:
             self.image = pygame.transform.flip(self.image, True, False)
 
+    def is_colliding(self, character):
+        return sqrt(pow(self.position[0] - character.position[0], 2) +
+                    pow(self.position[1] - character.position[1], 2)) <= self.board.tile_size / 2.0
+
 
 class Pacman(Character):
     TEXTURES_ROW = TEXTURES_COLUMN = 10
+    SPEED_BONUS = 20
 
     def __init__(self, board, *groups):
         super().__init__(board, *groups)
@@ -185,6 +190,7 @@ class Pacman(Character):
         # textures related attributes
         self.texture = pygame.image.load('./sheets/Dwarf Sprite Sheet.png')
         self.texture_size = 32
+        # self.character_height = self.character_width = 2 * self.board.tile_size
 
         self.idle_length = 5
         self.run_length = 8
