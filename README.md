@@ -2,7 +2,9 @@
 
 A custom-looking version of popular Pacman game, written in Python.
 
-![Main game screen](images/main_screen.png)
+<p align="center">
+  <img src="https://github.com/olliekrk/pacman-game/blob/master/images/main_screen.png?raw=true" alt="Main game screen"/>
+</p>
 
 Libraries used in this project:
 * Pygame
@@ -19,12 +21,17 @@ Libraries used in this project:
 
 ## Game Gallery
 
-![Game after start](images/game.png)
+<p align="center">
+  <img src="https://github.com/olliekrk/pacman-game/blob/master/images/game.png?raw=true" alt="Pacman game screen"/>
+</p>
 
-![Pacman in killing mode](images/killing_mode.png)
+<p align="center">
+  <img src="https://github.com/olliekrk/pacman-game/blob/master/images/killing_mode.png?raw=true" alt="Pacman alternative"/>
+</p>
 
-![Game over screen](images/game_over.png)
-
+<p align="center">
+  <img src="https://github.com/olliekrk/pacman-game/blob/master/images/game_over.png?raw=true" alt="Game over screen"/>
+</p>
 
 ## TODO
 * ~~main menu (after starting game) + pause menu (after pressing ESC)~~
