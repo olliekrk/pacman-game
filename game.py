@@ -67,8 +67,6 @@ class GameStatus(object):
         self.killing_activated_time = None
         self.last_kill_time = None
         self.bonus_multiplier = 0
-        self.player_points = 0
-        self.player_lives = GameStatus.MAX_LIVES
         level_completed_menu.enable()
 
     def reset(self):
