@@ -115,7 +115,7 @@ class MazeGenerator:
         height = MazeGenerator.SIZE[1]
         self.maze_model = [[(1 if MazeGenerator.is_border(x, y) else 0) for x in range(width)] for y in range(height)]
 
-        build_cells = {(14, 15)}
+        build_cells = {(9, 12), (9, 20), (18, 12), (18, 20)}
         already_checked_cells = set()
 
         while len(build_cells):
@@ -133,8 +133,8 @@ class MazeGenerator:
                         new_build_cells.add(adj_cell)
                         self.maze_model[adj_cell[1]][adj_cell[0]] = 1
 
+                # find 9x9 empty place if no cells are available
                 if not available_cells:
-                    # find 9x9 empty place if no cells are available
                     n = self.nine_nine_finder()
                     if n:
                         new_build_cells.add(n)
