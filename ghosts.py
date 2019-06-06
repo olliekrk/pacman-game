@@ -91,8 +91,13 @@ class Ghost(Character):
                 if chosen_distance is None or chosen_distance > distance:
                     chosen_direction, chosen_distance = direction, distance
 
+            # reverse direction on dead ends
+            if chosen_distance is None:
+                self.reverse_direction()
+            else:
+                self.direction = chosen_direction
+
             self.direction_change_time = time
-            self.direction = chosen_direction
 
     @abc.abstractmethod
     def update_chase_tile(self, pacman, blinky):

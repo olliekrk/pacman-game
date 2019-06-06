@@ -1,7 +1,10 @@
+import random
+
 import pygame
 
 import collectibles
 import game
+from maze_generator import MazeGenerator
 
 
 class Board(object):
@@ -168,3 +171,37 @@ class ClassicLayout(BoardLayout):
                          ghost_spawn_map, ghost_house_indices, ghost_path_indices,
                          spawn_index, tunnel_indices, big_dots_indices,
                          ClassicLayout.SIZE)
+
+
+class GeneratedLayout(BoardLayout):
+    SIZE = (28, 31)
+
+    def __init__(self):
+        generator = MazeGenerator()
+        generator.prepare_model()
+        self.model = generator.maze_model
+
+        walls = [(i, j) for i in range(self.SIZE[0]) for j in range(self.SIZE[1]) if self.model[j][i] == 1]
+
+        ghost_house = []
+
+        ghost_path = []
+
+        big_dots = []
+
+        accessible = [(i, j) for i in range(self.SIZE[0]) for j in range(self.SIZE[1]) if self.model[j][i] == 0]
+
+        possible_ghost_spawn = [accessible[random.randint(0, len(accessible) - 1)] for i in range(4)]
+        ghost_spawn = {
+            game.GhostNames.inky: possible_ghost_spawn[0],
+            game.GhostNames.pinky: possible_ghost_spawn[1],
+            game.GhostNames.blinky: possible_ghost_spawn[2],
+            game.GhostNames.clyde: possible_ghost_spawn[3]
+        }
+
+        possible_spawn = [x for x in accessible if x not in possible_ghost_spawn]
+        spawn = possible_spawn[random.randint(0, len(possible_spawn) - 1)]
+
+        tunnel = []
+
+        super().__init__(walls, accessible, ghost_spawn, ghost_house, ghost_path, spawn, tunnel, big_dots, self.SIZE)

@@ -24,6 +24,7 @@ class Directions(Enum):
 
 
 class Character(pygame.sprite.DirtySprite):
+    BASE_SPEED = 120
     TILES_CHANGE_SPEED = 0.010
     TELEPORT_TIME_GAP = 1000
     DIRECTION_SWITCH_MAP = {
@@ -40,7 +41,7 @@ class Character(pygame.sprite.DirtySprite):
         self.board = board
         self.character_width = board.tile_size
         self.character_height = board.tile_size
-        self.speed = 130
+        self.speed = Character.BASE_SPEED
 
         # movement-related features
         self.position_tile = None

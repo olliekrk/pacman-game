@@ -1,8 +1,20 @@
 import board
 import characters
 from ghosts import *
-import pygame
-import application
+
+TITLE = "Pacman WIEiT Edition"
+ICON_TITLE = "Pacman SE"
+
+BOARD_SIZE = (28, 36)  # 28 x 36 tiles is the original size of board
+TILE_SIZE = 25  # pixels
+SCREEN_RESOLUTION = (TILE_SIZE * BOARD_SIZE[0], TILE_SIZE * BOARD_SIZE[1])
+
+MENU_BACKGROUND_COLOR = (255, 255, 26)
+COLOR_GREY = (107, 102, 97)
+COLOR_BLACK = (0, 0, 0)
+COLOR_SELECTED = (255, 153, 0)
+
+game = None
 
 
 class GameStatus(object):
@@ -66,13 +78,15 @@ class Game(object):
     FPS_LIMIT = 90
     TICKS_PER_SEC = 1000.0
 
-    def __init__(self, game_screen, game_clock, tile_size):
+    def __init__(self, game_screen, game_clock, tile_size, generate_layout=False):
         self.finished = False
         self.game_screen = game_screen
         self.game_clock = game_clock
-        self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
+        if not generate_layout:
+            self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
+        else:
+            self.board = board.Board(tile_size, game_screen, board.GeneratedLayout())
         self.status = GameStatus()
-        self.menus = None
 
         # pause properties
         self.pause = False
@@ -279,6 +293,7 @@ class Game(object):
     # next level loading
     def advance_to_next_level(self):
         # start a new level, optionally: modify the difficulty
+        self.player.speed = Character.BASE_SPEED
         self.restart_characters_positions()
         self.dots_group = self.board.prepare_dots()
         self.big_dots_group = self.board.prepare_big_dots()
