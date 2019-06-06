@@ -84,14 +84,15 @@ class Game(object):
     FPS_LIMIT = 90
     TICKS_PER_SEC = 1000.0
 
-    def __init__(self, game_screen, game_clock, tile_size, generate_layout=False):
+    def __init__(self, game_screen, game_clock, tile_size, layout='classic'):
         self.finished = False
         self.game_screen = game_screen
         self.game_clock = game_clock
-        if not generate_layout:
+        if layout == 'classic':
             self.board = board.Board(tile_size, game_screen, board.ClassicLayout())
         else:
-            self.board = board.Board(tile_size, game_screen, board.GeneratedLayout())
+            self.board = board.Board(tile_size, game_screen, board.GeneratedLayout(layout))
+
         self.status = GameStatus()
 
         # pause properties
@@ -334,7 +335,14 @@ def run_game():
 
 def run_random_game():
     global game
-    game = Game(game_screen, game_clock, TILE_SIZE, True)
+    game = Game(game_screen, game_clock, TILE_SIZE, 'prim')
+    game.main_loop()
+    main_menu.disable()
+
+
+def run_wall_game():
+    global game
+    game = Game(game_screen, game_clock, TILE_SIZE, 'wall')
     game.main_loop()
     main_menu.disable()
 
@@ -427,6 +435,7 @@ if __name__ == "__main__":
     main_menu = create_menu('Pacman', main_background, 100)
     main_menu.add_option('Classic', run_game)
     main_menu.add_option('Random maze', run_random_game)
+    main_menu.add_option('Cross maze', run_wall_game)
     main_menu.add_option('Quit', PYGAME_MENU_EXIT)
 
     # PAUSE MENU

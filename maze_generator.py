@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, shuffle
 
 
 class MazeGenerator:
@@ -43,15 +43,14 @@ class MazeGenerator:
             to_be_checked = new_to_be_checked
         return area
 
-    def prepare_model(self):
+    # a'la Prim Algorithm
+    def prepare_prim_model(self):
         width = MazeGenerator.SIZE[0]
         height = MazeGenerator.SIZE[1]
-
         self.maze_model = [[(1 if MazeGenerator.is_wall(x, y) else 0) for x in range(width)] for y in range(height)]
 
         graph = [(i, j) for i in range(width) for j in range(height) if self.maze_model[j][i] == 0]
 
-        # a'la Prim Algorithm
         initial_vertex = graph[randint(0, len(graph) - 1)]
         v_graph = {initial_vertex}
         v_edges = self.adjacent_edges(initial_vertex)
@@ -69,6 +68,85 @@ class MazeGenerator:
                 v_graph = {v for v in zero_area if v in graph}
                 v_edges = list({edge for v in v_graph for edge in self.adjacent_edges(v)})
 
+    CHECK_LIST = [(col, row) for col in range(28 - 2) for row in range(31 - 2)]
+    shuffle(CHECK_LIST)
+
+    def nine_nine_finder(self):
+        for col, row in MazeGenerator.CHECK_LIST:
+            ok = True
+            nine_area = [(col + c, row + r) for c in range(3) for r in range(3)]
+            for c, r in nine_area:
+                if self.maze_model[r][c] == 1:
+                    MazeGenerator.CHECK_LIST.remove((col, row))
+                    ok = False
+                    break
+
+            if ok:
+                MazeGenerator.CHECK_LIST.remove((col, row))
+                return col + 1, row + 1
+
+        return None
+
+    def check_cell_wall_model(self, cell, origin_cell):
+        # cell is out of board
+        if not (0 < cell[0] < self.SIZE[0] - 1 and 0 < cell[1] < self.SIZE[1] - 1):
+            return False
+
+        # check if placing cell would block some path
+        to_check = self.adjacent_points(cell)
+        corner_checks = [
+            (cell[0] - 1, cell[1] - 1),
+            (cell[0] - 1, cell[1] + 1),
+            (cell[0] + 1, cell[1] + 1),
+            (cell[0] + 1, cell[1] - 1),
+        ]
+        to_check.extend(corner_checks)
+
+        for point in to_check:
+            if 0 <= point[0] < self.SIZE[0] and 0 <= point[1] < self.SIZE[1]:
+                if point != origin_cell and self.maze_model[point[1]][point[0]] == 1:
+                    return False
+
+        # otherwise OK
+        return True
+
+    def prepare_wall_model(self):
+        width = MazeGenerator.SIZE[0]
+        height = MazeGenerator.SIZE[1]
+        self.maze_model = [[(1 if MazeGenerator.is_border(x, y) else 0) for x in range(width)] for y in range(height)]
+
+        build_cells = {(14, 15)}
+        already_checked_cells = set()
+
+        while len(build_cells):
+            new_build_cells = set()
+            for build_cell in build_cells:
+                already_checked_cells.add(build_cell)
+                self.maze_model[build_cell[1]][build_cell[0]] = 1
+                adjacent_list = self.adjacent_points(build_cell)
+                available_cells = [cell for cell in adjacent_list if self.check_cell_wall_model(cell, build_cell)]
+
+                shuffle(available_cells)
+
+                for adj_cell in available_cells:
+                    if adj_cell not in already_checked_cells:
+                        new_build_cells.add(adj_cell)
+                        self.maze_model[adj_cell[1]][adj_cell[0]] = 1
+
+                if not available_cells:
+                    # find 9x9 empty place
+                    n = self.nine_nine_finder()
+                    if n:
+                        new_build_cells.add(n)
+
+            build_cells = new_build_cells
+
     def print_model(self):
         for l in self.maze_model:
             print(l)
+
+
+if __name__ == "__main__":
+    m = MazeGenerator()
+    m.prepare_wall_model()
+    m.print_model()

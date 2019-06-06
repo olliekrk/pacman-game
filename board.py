@@ -176,9 +176,13 @@ class ClassicLayout(BoardLayout):
 class GeneratedLayout(BoardLayout):
     SIZE = (28, 31)
 
-    def __init__(self):
+    def __init__(self, type):
         generator = MazeGenerator()
-        generator.prepare_model()
+        if type == 'prim':
+            generator.prepare_prim_model()
+        elif type == 'wall':
+            generator.prepare_wall_model()
+
         self.model = generator.maze_model
 
         walls = [(i, j) for i in range(self.SIZE[0]) for j in range(self.SIZE[1]) if self.model[j][i] == 1]
