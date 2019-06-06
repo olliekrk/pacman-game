@@ -46,6 +46,7 @@ class Ghost(Character):
 
         # necessary to prohibit ghost from reversing direction while chasing
         self.direction_change_time = pygame.time.get_ticks()
+        self.board = board
 
     @staticmethod
     def calculate_distance_to_tile(from_tile, to_tile):
@@ -92,7 +93,7 @@ class Ghost(Character):
                     chosen_direction, chosen_distance = direction, distance
 
             # reverse direction on dead ends
-            if chosen_distance is None:
+            if chosen_distance is None and self.position_tile not in self.board.board_layout.ghost_path:
                 self.reverse_direction()
             else:
                 self.direction = chosen_direction
