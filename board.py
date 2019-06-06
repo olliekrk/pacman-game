@@ -191,9 +191,9 @@ class GeneratedLayout(BoardLayout):
 
         ghost_path = []
 
-        big_dots = []
-
         accessible = [(i, j) for i in range(self.SIZE[0]) for j in range(self.SIZE[1]) if self.model[j][i] == 0]
+
+        big_dots = [accessible[random.randint(0, len(accessible)-1)] for i in range(4)]
 
         possible_ghost_spawn = [accessible[random.randint(0, len(accessible) - 1)] for i in range(4)]
         ghost_spawn = {

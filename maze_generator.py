@@ -134,7 +134,7 @@ class MazeGenerator:
                         self.maze_model[adj_cell[1]][adj_cell[0]] = 1
 
                 if not available_cells:
-                    # find 9x9 empty place
+                    # find 9x9 empty place if no cells are available
                     n = self.nine_nine_finder()
                     if n:
                         new_build_cells.add(n)
