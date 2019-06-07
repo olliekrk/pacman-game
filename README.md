@@ -12,7 +12,8 @@ Libraries used in this project:
 
 ### How to run
 1. Run game.py
-2. In the future commits .exe release will be published.
+2. Chose one of the modes: Classic, Random Maze, Block Maze
+3. In the future commits .exe release will be published.
 
 ## Contributors
 
@@ -23,14 +24,25 @@ Libraries used in this project:
 
 <p align="center">
   <img src="https://github.com/olliekrk/pacman-game/blob/master/images/game.png?raw=true" alt="Pacman game screen"/>
+  <text>Classic game mode</text>
 </p>
+
+
+<p align="center">
+  <img src="https://github.com/olliekrk/pacman-game/blob/master/images/block_play.png?raw=true" alt="Pacman game screen"/>
+  <text>Random block maze game mode</text>
+</p>
+
 
 <p align="center">
   <img src="https://github.com/olliekrk/pacman-game/blob/master/images/killing_mode.png?raw=true" alt="Pacman alternative"/>
+  <text>Pacman in killing mode</text>
 </p>
+
 
 <p align="center">
   <img src="https://github.com/olliekrk/pacman-game/blob/master/images/game_over.png?raw=true" alt="Game over screen"/>
+  <text>Game over screen</text>
 </p>
 
 ## TODO
@@ -38,6 +50,8 @@ Libraries used in this project:
 * ~~displaying game statistics like: lives left, points acquired, game time, etc~~
 * ~~events screens (delays, info) for events like: game over, next level, life loss, big dot eaten, etc~~
 * ~~**board layout generator**~~
+
+Optionally:
 * background music + events sounds (pygame.mixer)
 * alternative controls by mouse buttons
-* _?multiplayer?_
+* multiplayer
